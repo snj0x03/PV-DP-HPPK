@@ -10,11 +10,13 @@ def setup_save_dir(video_dir, frame_save_dir):
 
 def video_list(video_dir, frame_save_dir, csv_path):
     csv = load(csv_path)
+    v_list = []
     for folder in video_dir:
         for video in folder:
             target =  {"video_path": folder+video, "save_dir": frame_save_dir+folder, "part_name": csv[folder]}
+            v_list.append(target)
 
-    return target
+    return v_list 
     
 
 
