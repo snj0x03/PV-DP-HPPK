@@ -3,7 +3,6 @@
 A data preparation pipeline for HP printer part image datasets.  
 Handles frame extraction from raw videos and image augmentation for model training.
 
----
 
 ## Project Structure
 
@@ -19,7 +18,6 @@ PV-DP-HPPK/
     └── utils.py
 ```
 
----
 
 ## Setup
 
@@ -33,16 +31,15 @@ cd PV-DP-HPPK
 ```bash
 pip install -r requirements.txt
 ```
----
 
 ## Configuration
 
 Edit `config.yml` before running:
 
 ```yaml
-video_dir      : "" # path to video files
-frame_save_dir : "" # path for output of frame extraction
-csv_path       : "" # path to parts name csv
+video_dir      : ""      # path to video files
+frame_save_dir : ""      # path for output of frame extraction
+csv_path       : ""      # path to parts name csv
 
 frame_rate     : 0.25    # seconds per frame (0.25 = 4 fps)
 target_max     : 400     # max frames to extract per part
@@ -57,7 +54,6 @@ noise:
     apply      : true    # apply noise
 ```
 
----
 
 ## Usage
 
@@ -73,7 +69,6 @@ Run augmentation on YOLO dataset:
 python main.py --option augment
 ```
 
----
 
 ## Pipeline Stages
 
@@ -91,7 +86,7 @@ python main.py --option augment
 - Applies flip, brightness, blur, noise, rotate, MixUp, Mosaic
 - Output 
 
----
+
 
 ## Dependencies
 
