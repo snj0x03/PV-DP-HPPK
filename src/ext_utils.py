@@ -2,34 +2,34 @@
 
 import os 
 
-def video_folder_list 
+
+def setup_save_dir(video_dir, frame_save_dir):
+    for dir_name in video_dir:
+        os.makedirs(frame_save_dir, dir_name)
 
 
-def match_csv_folder(folder_list: , part_list)
-
-
-def setup_extract_dir(extract_folder: str):
-    for dir_name in folder_list:
-        os.makedirs(base, dir_name)
-
-
-def extract_list(extract_folder):
-    for folder in folder_list:
+def video_list(video_dir, frame_save_dir, csv_path):
+    csv = load(csv_path)
+    for folder in video_dir:
         for video in folder:
-            target =  {"vp": folder+video, "dp": extract_folder+folder}
+            target =  {"video_path": folder+video, "save_dir": frame_save_dir+folder, "part_name": csv[folder]}
 
+    return target
     
 
 
-def extract_frame(video_path, save_dir, frame_rate, part_name):
+def extract_frame(video_dir, frame_save_dir, frame_rate, part_name):
     
 
 
-def run_extract(extract_list, extract_folder):
-    setup_extract_dir(extract_folder)
-    for target in extract_list(extract_folder):
-        video_path = target["vid path"]
-        dst = target["dst"]
-        extract_frame(video_path, destination_folder, frame_rate)
+def run_extract(video_dir, frame_save_dir, frame_rate):
+
+    setup_save_dir(video_dir, frame_save_dir)
+
+    for target in video_list(video_dir, frame_save_dir, csv_path):
+        video_dir = target["video_path"]
+        frame_save_dir = target["save_dir"]
+        part_name = target["part_name"]
+        extract_frame(video_dir, frame_save_dir, frame_rate, part_name)
 
     

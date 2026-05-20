@@ -2,53 +2,62 @@
 
 import os
 
-from albucore import hflip, vflip
-from albumentations import Mosaic
-from cv2 import blur
-from cv2.detail import Blender_MULTI_BAND 
-
-
 # apply hflip
+def horizontal_flip(target, save_dir):
+
 # apply vflip
+def vertical_flip(target, save_dir):
+
 # apply blur 
+def blur(target, save_dir):
+
 # apply noise
+def noise(target, save_dir):
+
 # apply rotate
+def rotate(target, save_dir):
+
 # apply random scale 
+def random_scale(target, save_dir):
+
 # apply Mosaic
+def mosaic(target, save_dir):
+
 # apply mixup
+def mixup(target, save_dir):
 
 # dataset
-def yolodataset():
-    for image in image_path:
+def yolo_dataset(yolo_dir):
+    for image in yolo_dir/images:
         target = {path: "image_path", bboxes: [], labels: []}
         dataset.append(target)
 
-def apply_all():
-    for image in dataset:
+    return dataset
 
-        if apply["hflip"] == true:
-            apply_hflip(target, save_dir)
+def apply_augmentation(yolo_dir, yolo_save_dir, augmentation_list):
 
-        if apply["vflip"] == true:
-            apply_hflip(target, save_dir)
+    dataset = yolo_dataset(yolo_dir)
 
-        if apply["blur"] == true:
-            apply_blur(target, save_dir)
+    for target in dataset:
 
-        if apply["noise"] == true:
-            apply_noise(target, save_dir)
+        if augmentation_list["hflip"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
 
-        if apply["random scale"] == true:
-            apply_rscale(target, save_dir)
-
-        if apply["mosaic"] == true:
-            apply_mosaic(target, save_dir)
-
-        if apply["mixup"] == true:
-            apply_mixup(target, save_dir)
+        if augmentation_list["vflip"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
         
+        if augmentation_list["blur"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
 
+        if augmentation_list["noise"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
 
+        if augmentation_list["rotate"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
 
+        if augmentation_list["mosaic"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
 
+        if augmentation_list["mixup"]["apply"] == True:
+            apply_hflip(target, yolo_save_dir)
             
