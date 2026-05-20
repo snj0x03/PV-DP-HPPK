@@ -6,8 +6,8 @@ import argparse
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
-from run_extraction  import run_extract
-from run_augmentation import run_augment
+from ext_utils import run_extract
+from aug_utils import run_augment
 
 # MAIN 
 def main():
@@ -30,15 +30,15 @@ def main():
     YOLO_DIR = CFG["yolo_dir"]
     YOLO_SAVE_DIR = CFG["yolo_save_dir"]
 
-    AUGMENTATION_LIST = [
-        CFG["hflip"],
-        CFG["rflip"],
-        CFG["rotate"],
-        CFG["blur"],
-        CFG["noise"],
-        CFG["mixup"],
-        CFG["mosaic"],
-    ]
+    AUGMENTATION_LIST = {
+        "horizontal_flip": CFG["hflip"],
+        "vertical_flip": CFG["rflip"],
+        "rotate": CFG["rotate"],
+        "blur": CFG["blur"],
+        "noise": CFG["noise"],
+        "mixup": CFG["mixup"],
+        "mosaic": CFG["mosaic"],
+    }
 
 
     # RUN VIDEO FRAME EXTRACTION

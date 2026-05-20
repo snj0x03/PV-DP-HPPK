@@ -3,61 +3,92 @@
 import os
 
 # apply hflip
-def horizontal_flip(target, save_dir):
+def horizontal_flip(target, yolo_save_dir):
+    return 
 
 # apply vflip
-def vertical_flip(target, save_dir):
+def vertical_flip(target, yolo_save_dir):
+    return 
 
 # apply blur 
-def blur(target, save_dir):
+def blur(target, yolo_save_dir):
+    return 
 
 # apply noise
-def noise(target, save_dir):
+def noise(target, yolo_save_dir):
+    return 
 
 # apply rotate
-def rotate(target, save_dir):
+def rotate(target, yolo_save_dir):
+    return 
 
 # apply random scale 
-def random_scale(target, save_dir):
+def random_scale(target, yolo_save_dir):
+    return 
 
 # apply Mosaic
-def mosaic(target, save_dir):
+def mosaic(target, yolo_save_dir):
+    return 
 
 # apply mixup
-def mixup(target, save_dir):
+def mixup(target, yolo_save_dir):
+    return
 
-# dataset
-def yolo_dataset(yolo_dir):
-    for image in yolo_dir/images:
-        target = {path: "image_path", bboxes: [], labels: []}
-        dataset.append(target)
+
+
+def yolo_dataset(yolo_dir: str) -> list[dict[str, str | list[int] | list[list[int]]]]:
+    image_dir = os.path.join(yolo_dir, "images")
+    label_dir = os.path.join(yolo_dir, "labels")
+    dataset = []
+    for filename in os.listdir(image_dir):
+        if filename.endswith((".jpg")):
+            image_path = os.path.join(image_dir, filename)
+            label_path = os.path.join(label_dir, filename.replace(".jpg", ".txt"))
+
+            labels, bboxes = [], []
+            with open(label_path, "r") as f:
+                for lines in f.readlines():
+                    label, boxes = lines.split()[0], lines.split()[1:]
+                    label = int(label)
+                    boxes = [float(box) for box in boxes]
+                    labels.append(label)
+                    bboxes.append(boxes)
+
+            target = {
+                "image_path": image_path, 
+                "labels": labels,
+                "bboxes": bboxes 
+            }
+            dataset.append(target)
 
     return dataset
 
-def apply_augmentation(yolo_dir, yolo_save_dir, augmentation_list):
+
+
+
+def run_augment(yolo_dir: str, yolo_save_dir: str, augmentation_list: dict[str, dict[str, str | int]]) -> None:
 
     dataset = yolo_dataset(yolo_dir)
 
     for target in dataset:
+        if augmentation_list["horizontal_flip"]["apply"] == True:
+            horizontal_flip(target, yolo_save_dir)
 
-        if augmentation_list["hflip"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
-
-        if augmentation_list["vflip"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+        if augmentation_list["vertical_flip"]["apply"] == True:
+            vertical_flip(target, yolo_save_dir)
         
         if augmentation_list["blur"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+            blur(target, yolo_save_dir)
 
         if augmentation_list["noise"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+            noise(target, yolo_save_dir)
 
         if augmentation_list["rotate"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+            rotate(target, yolo_save_dir)
 
         if augmentation_list["mosaic"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+            mosaic(target, yolo_save_dir)
 
         if augmentation_list["mixup"]["apply"] == True:
-            apply_hflip(target, yolo_save_dir)
+            mixup(target, yolo_save_dir)
             

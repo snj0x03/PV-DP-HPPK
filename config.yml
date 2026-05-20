@@ -1,34 +1,32 @@
-# ===============================================
-# PVision Data Pipeline
-# ===============================================
+# EXTRACTION
 
-# -- Paths --------------------------------------
-path:
-  raw_path         : "../../Local/Capstone_Raw_Dataset"                                                # input video root folder
-  base_extract_dir : "../../Local/Run-Extracted"                                                       # extraction output root (Version_N created here)
-  annotation_dir   : "../../Local/Run-Annotated"                                                       # annotated dataset      (YOLO format)
-  aug_dir          : "../../Local/Run-Augmented"                                                       # augmentation output root
-  parts_excel      : "../../HP_dataset/AI Parts Finder_Parts List_Jasper_rev.xlsx"                     # HP printer part dataset root
+video_dir: "../../"
+frame_save_dir: "../../"
+csv_path: "../../"
+
+frame_rate       : 0.25  # seconds per frame (0.25 = 4fps)
+target_max       : 400   # max frames to extract per part
 
 
-# -- Extraction ---------------------------------
-extraction:
-  version_mode     : "new" # "new" = create next Version_N | "latest" = reuse current
-  frame_rate       : 0.25  # seconds per frame (0.25 = 4fps)
-  target_max       : 400   # max frames to extract per part
-  hash_threshold   : null  # perceptual hash threshold for dedup (null = skip)
+# AUGMENTATION 
 
+yolo_dir: "../../"
+yolo_save_dir: "../../"
 
-# -- Augmentation -------------------------------
-augmentation:
-  aug_target       : 750   # target image count per part after augmentation
-  aug_min_mult     : 3     # mininmum augmentation multiplier
-  aug_max_mult     : 10    # maximum augmentation multiplier
-  exclude_parts    : []    # list of part folder names to skip 
+horizontal_flip:
+  apply: true
 
-# -- Pipeline Stages ----------------------------
-run:
-  # run frame extraction
-  extract          : true  
-  # run augmentation
-  augmentation     : false
+vertical_flip:
+  apply: true
+
+rotate:
+  apply: true
+
+noise: 
+  apply: true
+
+mosaic:
+  apply: true
+
+mixup:
+  apply: true

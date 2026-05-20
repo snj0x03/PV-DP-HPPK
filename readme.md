@@ -10,12 +10,11 @@ Handles frame extraction from raw videos and image augmentation for model traini
 ```
 PV-DP-HPPK/
 ├── config.yml
+├── main.py
 ├── requirements.txt
 └── src/
-    ├── run_main.py
     ├── run_extraction.py
     ├── run_augmentation.py
-    ├── annotate.py
     ├── augment.py
     └── utils.py
 ```
@@ -34,30 +33,6 @@ cd PV-DP-HPPK
 ```bash
 pip install -r requirements.txt
 ```
-
-### 3. Prepare your local data folders
-
-```
-Capstone/
-├── PV-DP-HPPK/                  ← this repo
-├── Local/
-│   ├── Capstone_Raw_Dataset/    ← place raw videos here (required)
-│   │   ├── Part1/
-│   │   │   ├── video1.mp4
-│   │   │   └── video2.mp4
-│   │   ├── Part2/
-│   │   └── ...
-│   ├── Run-Extracted/           ← auto-created by Stage 1
-│   ├── Run-Annotated/           ← create manually, place YOLO-annotated data here
-│   │   ├── Part1/
-│   │   │   ├── images/
-│   │   │   └── labels/
-│   │   └── ...
-│   └── Run-Augmented/           ← auto-created by Stage 2
-└── HP_dataset/
-    └── AI Parts Finder_Parts List_Jasper_rev.xlsx
-```
-
 ---
 
 ## Configuration
@@ -65,44 +40,37 @@ Capstone/
 Edit `config.yml` before running:
 
 ```yaml
-extraction:
-  version_mode  : "new"   # "new" = create next Version_N | "latest" = reuse current
-  frame_rate    : 0.25    # seconds per frame (0.25 = 4 fps)
-  target_max    : 400     # max frames to extract per part
+video_dir      : "" # path to video files
+frame_save_dir : "" # path for output of frame extraction
+csv_path       : "" # path to parts name csv
 
-augmentation:
-  aug_target    : 750     # target image count per part after augmentation
-  aug_min_mult  : 3       # minimum augmentation multiplier
-  aug_max_mult  : 10      # maximum augmentation multiplier
-  exclude_parts : []      # list of part folder names to skip (e.g. ["Part5"])
+frame_rate     : 0.25    # seconds per frame (0.25 = 4 fps)
+target_max     : 400     # max frames to extract per part
 
-run:
-  extract       : true    # set to true to run extraction
-  augmentation  : false   # set to true to run augmentation
+yolo_dir       : ""      # Input YOLO directory
+yolo_save_dir  : ""      # Output YOLO directory
+
+blur:
+    apply:     : true    # apply blur
+
+noise:
+    apply      : true    # apply noise
 ```
-
-> The default relative paths assume this structure:
-> ```
-> Capstone/
-> ├── PV-DP-HPPK/   ← repo
-> ├── Local/         ← data folders
-> └── HP_dataset/   ← Excel file
-> ```
-> If your folder structure is different, update the paths in `config.yml` to point to your data locations. Absolute paths (e.g. `C:/Users/yourname/...`) are also supported.
 
 ---
 
 ## Usage
 
-Run from the project root (`PV-DP-HPPK/`):
+Run Video Frame Extraction:
 
 ```bash
-python src/run_main.py
+python main.py --option extract
 ```
 
-To specify a custom config file:
+Run augmentation on YOLO dataset:
+
 ```bash
-python src/run_main.py --config config.yml
+python main.py --option augment
 ```
 
 ---
@@ -110,17 +78,18 @@ python src/run_main.py --config config.yml
 ## Pipeline Stages
 
 ### Stage 1 — Frame Extraction
-- Reads videos from `Capstone_Raw_Dataset/PartN/`
+- Reads videos 
 - Maps part folders to HP part names via the Excel file
 - Extracts frames at 4 fps, up to `target_max` per part
-- Output → `Run-Extracted/Version_N/all/` and `individual/PartN/`
+- Output 
 
 ### Stage 2 - Annotation
+- Annotate Extracte frame with Roboflow or AnyLabeling
 
 ### Stage 3 — Augmentation
-- Reads annotated images from `Run-Annotated/` (YOLO format)
+- Reads annotated images (YOLO format)
 - Applies flip, brightness, blur, noise, rotate, MixUp, Mosaic
-- Output → `Run-Augmented/`
+- Output 
 
 ---
 
