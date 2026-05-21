@@ -12,6 +12,7 @@ def agumentation_pipeline(augmentation_list):
         A.HorizontalFlip(p = 1),
         A.VerticalFlip(p = 1),
         A.GaussNoise(p = 1),
+        A.
     ], bbox_params = A.BboxParams(
         coord_format='yolo',
     )])
@@ -21,6 +22,10 @@ def agumentation_pipeline(augmentation_list):
 
 def apply_transform(target, pipeline_transform, yolo_save_dir):
 
+    # apply_transform with pipeline_transform
+
+
+    # save augmentated in yolo_save_dir
     
 
 
