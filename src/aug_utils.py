@@ -5,11 +5,11 @@ import albumentations as A
 
 
 def agumentation_pipeline(augmentation_list):
-
+    prod_hflip = augmentation_list['horizontal_flip']['prod']
 
 
     pipeline_transform = A.Compose([
-        A.HorizontalFlip(p = 1),
+        A.HorizontalFlip(p = prod_hflip),
         A.VerticalFlip(p = 1),
         A.GaussNoise(p = 1),
         A.

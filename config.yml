@@ -14,7 +14,7 @@ yolo_dir: "../../"
 yolo_save_dir: "../../"
 
 horizontal_flip:
-  apply: true
+  prod: 1.0
 
 vertical_flip:
   apply: true
