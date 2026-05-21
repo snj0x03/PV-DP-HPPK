@@ -1,38 +1,30 @@
 # Utils 
 
 import os
+import albumentations as A
 
-# apply hflip
-def horizontal_flip(target, yolo_save_dir):
-    return 
 
-# apply vflip
-def vertical_flip(target, yolo_save_dir):
-    return 
+def agumentation_pipeline(augmentation_list):
 
-# apply blur 
-def blur(target, yolo_save_dir):
-    return 
 
-# apply noise
-def noise(target, yolo_save_dir):
-    return 
 
-# apply rotate
-def rotate(target, yolo_save_dir):
-    return 
+    pipeline_transform = A.Compose([
+        A.HorizontalFlip(p = 1),
+        A.VerticalFlip(p = 1),
+        A.GaussNoise(p = 1),
+    ], bbox_params = A.BboxParams(
+        coord_format='yolo',
+    )])
 
-# apply random scale 
-def random_scale(target, yolo_save_dir):
-    return 
+    return pipeline_transform
 
-# apply Mosaic
-def mosaic(target, yolo_save_dir):
-    return 
 
-# apply mixup
-def mixup(target, yolo_save_dir):
-    return
+def apply_transform(target, pipeline_transform, yolo_save_dir):
+
+    
+
+
+
 
 
 
