@@ -6,8 +6,8 @@ import argparse
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
-from ext_utils import run_extract
-from aug_utils import run_augment
+import augmentation.run as apply_augmentation 
+import Frames.run as apply_extraction
 
 # MAIN 
 def main():
