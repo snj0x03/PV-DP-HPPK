@@ -6,8 +6,8 @@ import argparse
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
-import augmentation.run as apply_augmentation 
-import Frames.run as apply_extraction
+import Frames.run as run_extract 
+import Augmentation.run as run_augment 
 
 # MAIN 
 def main():
@@ -29,16 +29,9 @@ def main():
 
     YOLO_DIR = CFG["yolo_dir"]
     YOLO_SAVE_DIR = CFG["yolo_save_dir"]
+    MULTIPLIER = CFG["multiplier"]
+    MIXUP = CFG["mixup"]
 
-    AUGMENTATION_LIST = {
-        "horizontal_flip": CFG["hflip"],
-        "vertical_flip": CFG["rflip"],
-        "rotate": CFG["rotate"],
-        "blur": CFG["blur"],
-        "noise": CFG["noise"],
-        "mixup": CFG["mixup"],
-        "mosaic": CFG["mosaic"],
-    }
 
 
     # RUN VIDEO FRAME EXTRACTION
@@ -48,7 +41,7 @@ def main():
 
     # RUN AUGMENTATION 
     if args.option == "augment":
-        run_augment(YOLO_DIR, YOLO_SAVE_DIR, AUGMENTATION_LIST)
+        run_augment(YOLO_DIR, YOLO_SAVE_DIR, MULTIPLIER, MIXUP)
 
 
 if __name__ == "__main__":

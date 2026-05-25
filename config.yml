@@ -13,23 +13,5 @@ target_max       : 400   # max frames to extract per part
 yolo_dir: "../../"
 yolo_save_dir: "../../"
 
-horizontal_flip:
-  prod: 0.5
-
-vertical_flip:
-  prod: 0.5
-
-rotate:
-  prod: 0.5
-
-blur:
-  prod: 0.3
-
-noise:
-  prod: 0.3
-
-mosaic:
-  prod: 0.1
-
-mixup:
-  prod: 0.1
+multiplier: 4
+mixup: true

@@ -1,18 +1,24 @@
-from utils.directory import setup_save_dir
+from utils.directory import create_save_dir
 from Dataset.video import video_dataset
 from Frames.transform import extract_frame
 
 
-def run_extract(video_dir: str, frame_save_dir: str, frame_rate: int, csv_path: str) -> None:
+def run_extract(main_dir: str, save_dir: str, frame_rate: int, csv_path: str) -> None:
 
-    setup_save_dir(video_dir, frame_save_dir)
+    create_save_dir(main_dir, save_dir)
+    print("Save Directory Created")
 
-    dataset = video_dataset(video_dir, frame_save_dir, csv_path)
+    dataset = video_dataset(main_dir, save_dir, csv_path)
+    print("Video Dataset Created")
 
+    cnt = 0
     for target in dataset:
-        video_dir = target["video_path"]
+        video_path = target["video_path"]
         frame_save_dir = target["frame_save_dir"]
         part_name = target["part_name"]
-        extract_frame(video_dir, frame_save_dir, frame_rate, part_name)
+        extract_frame(video_path, frame_save_dir, frame_rate, part_name)
+        cnt += 1
+        print(f"Progress - {cnt / len(dataset)}%", end="\r", flush=True)
+    print("Frame Extraction Completed")
 
     

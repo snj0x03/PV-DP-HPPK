@@ -1,37 +1,61 @@
 import numpy as np 
 from PIL import Image
 import os
-from utils.directory import create_save_dirs, save_image, save_label
+import uuid
+from utils.directory import save_image, save_label
 from Augmentation.Custom import MixUp
+import logging
+
+logging.basicConfig(filename="augment.log", level=logging.WARNING, format='%(asctime)s - %(message)s')
 
 
-def apply_transform(target, pipeline_transform, yolo_save_dir, image_pool, augmentation_list):
+def apply_transform(target, pipeline_transform, save_dir):
     img = np.array(Image.open(target["image_path"]))
 
     result     = pipeline_transform(image=img, bboxes=target["bboxes"], labels=target["labels"])
-    aug_img    = result["image"]
-    aug_bboxes = result["bboxes"]
-    aug_labels = result["labels"]
-
-    if not aug_bboxes:
-        return
-
-    stem     = os.path.splitext(os.path.basename(target["image_path"]))[0]
-    aug_name = f"{stem}_aug.jpg"
-
-    img_save_dir, lbl_save_dir = create_save_dirs(yolo_save_dir)
-
-    save_image(aug_img, img_save_dir, aug_name)
-    save_label(aug_labels, aug_bboxes, lbl_save_dir, aug_name)
-
-    
-def apply_mixup(target1, target2, yolo_save_dir):
-    result = MixUp(target1, target2)
-    img = result["image"]
+    image    = result["image"]
     bboxes = result["bboxes"]
     labels = result["labels"]
-    save_image(img, yolo_save_dir)
-    save_label(labels, bboxes, yolo_save_dir)
+
+    logging.info(f"\n{target["image_path"]}\n{bboxes}\n{labels}")
+    if not bboxes:
+        return
+
+    # stem = os.path.splitext(os.path.basename(target["image_path"]))[0]
+    name = uuid.uuid1()
+    filename = f"{name}.jpg"
+    textname = f"{name}.txt"
+
+    save_image(image, os.path.join(save_dir, "images"), filename)
+    save_label(labels, bboxes, os.path.join(save_dir, "labels"), textname)
+
+    
+def apply_mixup(target1, target2, save_dir):
+
+    img = np.array(Image.open(target1["image_path"]))
+    ex_img = np.array(Image.open(target2["image_path"]))
+
+    result = MixUp(image = img,
+                   bboxes = target1["bboxes"],
+                   labels = target1["labels"],
+                   ex_image = ex_img,
+                   ex_bboxes = target2["bboxes"],
+                   ex_labels = target2["labels"])
+
+    
+    image = result["image"]
+    bboxes = result["bboxes"]
+    labels = result["labels"]
+    logging.info(f"\n{target1["image_path"]}\n{bboxes}\n{labels}")
+
+    if not bboxes:
+        return
+
+    name = uuid.uuid1()
+    filename = f"{name}m1x.jpg"
+    textname = f"{name}m1x.txt"
+    save_image(image, os.path.join(save_dir, "images"), filename)
+    save_label(labels, bboxes, os.path.join(save_dir, "labels"), textname)
 
 
 
