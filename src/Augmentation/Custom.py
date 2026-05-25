@@ -2,8 +2,8 @@ import numpy as np
 
 def MixUp(image, bboxes, labels, ex_image, ex_bboxes, ex_labels):
 
-    h1, w1 = image.size
-    h2, w2 = ex_image.size
+    w1, h1 = image.shape[:2]
+    w2, h2 = ex_image.shape[:2]
     H, W = max(h1, h2), max(w1, w2)
 
     c1 = np.pad(image, ((0, W - w1), (0, H - h1), (0, 0)), 'constant')
@@ -26,6 +26,6 @@ def MixUp(image, bboxes, labels, ex_image, ex_bboxes, ex_labels):
 
     mixed_bboxes = bboxes + ex_bboxes
     mixed_labels = labels + ex_labels 
-    result = { "img": mixed, "bboxes": mixed_bboxes, "labels": mixed_labels }
+    result = { "image": mixed, "bboxes": mixed_bboxes, "labels": mixed_labels }
 
     return result

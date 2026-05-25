@@ -2,7 +2,7 @@ from utils.directory import load_part_names
 import os
 import logging
 
-logging.basicConfig(level=logging.INFO, filename="extract.log")
+logging.basicConfig(level=logging.INFO, filename="log.log")
 
 def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict[str, str]]:
     part_names = load_part_names(csv_path)

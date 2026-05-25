@@ -6,7 +6,7 @@ from utils.directory import save_image, save_label
 from Augmentation.Custom import MixUp
 import logging
 
-logging.basicConfig(filename="augment.log", level=logging.WARNING, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename="log.log", level=logging.INFO)
 
 
 def apply_transform(target, pipeline_transform, save_dir):

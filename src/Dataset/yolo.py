@@ -23,6 +23,7 @@ def yolo_dataset(file_dir: str) -> list[dict[str, str | list[int] | list[list[in
                 "labels": labels,
                 "bboxes": bboxes 
             }
+
             dataset.append(target)
 
     return dataset

@@ -10,8 +10,8 @@ target_max       : 400   # max frames to extract per part
 
 # AUGMENTATION 
 
-yolo_dir: "../../"
-yolo_save_dir: "../../"
+yolo_dir: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\raw"
+yolo_save_dir: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\processed" 
 
-multiplier: 4
+multiplier: 2
 mixup: true

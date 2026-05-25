@@ -4,7 +4,7 @@ import os
 from utils.directory import save_image
 import logging
 
-logging.basicConfig(filename="extract.log", format='%(asctime) - %(message)')
+logging.basicConfig(filename="log.log", format='%(asctime) - %(message)')
 
 def extract_frame(video_path: str, save_dir: str, frame_rate: int, part_name: str) -> None:
     cap = cv2.VideoCapture(video_path)
