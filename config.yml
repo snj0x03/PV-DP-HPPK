@@ -1,10 +1,10 @@
 # EXTRACTION
 
-video_dir: "../../"
-frame_save_dir: "../../"
-csv_path: "../../"
+video_dir: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\raw"
+frame_save_dir: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\processed" 
+csv_path: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\raw\\pt.csv"
 
-frame_rate       : 0.25  # seconds per frame (0.25 = 4fps)
+frame_rate       : 45  # seconds per frame (0.25 = 4fps)
 target_max       : 400   # max frames to extract per part
 
 

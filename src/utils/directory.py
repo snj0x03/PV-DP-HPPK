@@ -24,9 +24,9 @@ def save_label(labels: list, bboxes: list, save_dir: str, filename: str) -> None
     # return img_save_dir, lbl_save_dir
 
 def create_save_dir(main_dir: str, save_dir: str) -> None:
-    for dir in os.listdir(main_dir):
-        if os.path.isdir(dir):
-            os.makedirs(os.path.join(save_dir, dir))
+    for dirname in os.listdir(main_dir):
+        if os.path.isdir(os.path.join(main_dir, dirname)):
+            os.makedirs(os.path.join(save_dir, dirname))
 
 
 def load_part_names(csv_path: str) -> dict[str, str]:

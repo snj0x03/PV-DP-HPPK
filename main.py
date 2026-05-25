@@ -4,10 +4,10 @@ import sys
 import argparse
 
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "./src")
 
-import Frames.run as run_extract 
-import Augmentation.run as run_augment 
+from Frames.run import run_extract 
+from Augmentation.run import run_augment
 
 # MAIN 
 def main():
