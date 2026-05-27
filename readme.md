@@ -96,7 +96,6 @@ python main.py --option augment
 | `Pillow` | Image loading and saving |
 | `numpy` | Array operations for augmentation |
 | `pandas` | Reading the HP parts Excel file |
-| `openpyxl` | Excel `.xlsx` support for pandas |
 | `pyyaml` | Parsing `config.yml` |
 | `imagehash` | Perceptual hash deduplication |
 | `albumentations` | Image augmentation pipeline |

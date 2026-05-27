@@ -1,10 +1,6 @@
 import cv2
 import uuid
-import os
 from utils.directory import save_image
-import logging
-
-logging.basicConfig(filename="log.log", format='%(asctime) - %(message)')
 
 def extract_frame(video_path: str, save_dir: str, frame_rate: int, part_name: str) -> None:
     cap = cv2.VideoCapture(video_path)
@@ -21,14 +17,10 @@ def extract_frame(video_path: str, save_dir: str, frame_rate: int, part_name: st
 
         if count % interval == 0:
             try:
-                # img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 filename = f"{part_name}-{uuid.uuid1()}.jpg"
-                # filepath = os.path.join(save_dir, filename)
-                # cv2.imwrite(filepath, frame)
                 save_image(frame, save_dir, filename)
-                logging.info(f"{save_dir}/{filename} saved")
-
             except Exception as e:
                 print(e)
+        count += 1
     
     return 

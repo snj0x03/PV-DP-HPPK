@@ -1,8 +1,6 @@
 from utils.directory import load_part_names
 import os
-import logging
 
-logging.basicConfig(level=logging.INFO, filename="log.log")
 
 def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict[str, str]]:
     part_names = load_part_names(csv_path)
@@ -18,8 +16,6 @@ def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict[str,
                         "save_dir": os.path.join(save_dir, p), 
                         "part_name": part_names[p]
                     }
-                    logging.info(f"{target["video_path"]} - {target["save_dir"]} - {target["part_name"]}")
-
                     dataset.append(target)
 
     return dataset 

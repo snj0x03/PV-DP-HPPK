@@ -2,6 +2,7 @@ import yaml
 import os
 import sys
 import argparse
+import warnings 
 
 # sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "./src")
@@ -9,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "./src")
 from Frames.run import run_extract 
 from Augmentation.run import run_augment
 
+warnings.filterwarnings("ignore", module="albumentations")
 # MAIN 
 def main():
 
@@ -29,6 +31,7 @@ def main():
 
     YOLO_DIR = CFG["yolo_dir"]
     YOLO_SAVE_DIR = CFG["yolo_save_dir"]
+    COPY_ORIGINAL = CFG["copy"]
     MULTIPLIER = CFG["multiplier"]
     MIXUP = CFG["mixup"]
 
@@ -41,7 +44,7 @@ def main():
 
     # RUN AUGMENTATION 
     if args.option == "augment":
-        run_augment(YOLO_DIR, YOLO_SAVE_DIR, MULTIPLIER, MIXUP)
+        run_augment(YOLO_DIR, YOLO_SAVE_DIR, COPY_ORIGINAL, MULTIPLIER, MIXUP)
 
 
 if __name__ == "__main__":
