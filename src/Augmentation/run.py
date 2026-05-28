@@ -1,6 +1,6 @@
 from Dataset.yolo import yolo_dataset
 from Dataset.video import image_dataset
-from Augmentation.Pipeline import augment_transform, copy_transform
+from Augmentation.Pipeline import augment_transform, copy_transform, classify_transform, empty_transform
 from Augmentation.transform import apply_transform, apply_mixup, apply_transform2
 from utils.directory import create_save_dir
 import random
@@ -37,9 +37,9 @@ def run_augment2(file_dir, save_dir, copy, multiplier):
     cnt = 0
     for target in dataset:
         if copy == True:
-            apply_transform2(target, copy_transform)
+            apply_transform2(target, empty_transform)
         for _ in range(multiplier):
-            apply_transform2(target, augment_transform)
+            apply_transform2(target, classify_transform)
 
         cnt += 1
         print(f"Progress - {int(cnt*100 / len(dataset))}% - {cnt}/{len(dataset)}", end="\r", flush=True)

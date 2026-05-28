@@ -12,8 +12,8 @@ frame_rate       : 45  # seconds per frame (0.25 = 4fps)
 yolo_dir: "C:\\Users\\sawna\\Desktop\\error_test\\case"
 yolo_save_dir: "C:\\Users\\sawna\\Desktop\\error_test\\pcs"
 
-task: "Detection"
+task: "Classification" # Detectio or Classification
 copy: true
-multiplier: 2
-mixup: false
+multiplier: 6
+mixup: true
 
