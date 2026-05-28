@@ -54,5 +54,17 @@ def apply_mixup(target1, target2, save_dir):
     except Exception as e:
         print(e)
 
+def apply_transform2(target, pipeline_transform):
+    img = np.array(Image.open(target["image_path"]))
+    try:
+        result = pipeline_transform(image = img)
+        image = result["image"]
+
+        name = uuid.uuid1()
+        filename = f"{name}.jpg"
+        save_image(image, target["save_dir"], filename)
+    except Exception as e:
+        print(e)
+
 
 

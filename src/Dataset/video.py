@@ -19,3 +19,18 @@ def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict[str,
                     dataset.append(target)
 
     return dataset 
+
+def image_dataset(file_dir, save_dir):
+    dataset = []
+    for dirname in os.listdir(file_dir):
+        p = dirname
+        d = os.path.join(file_dir, dirname)
+        if os.path.isdir(d):
+            for filename in os.listdir(d):
+                if filename.endswith((".jpg")):
+                    target = {
+                        "image_path": os.path.join(d, filename),
+                        "save_dir": os.path.join(save_dir, p),
+                    }
+                    dataset.append(target)
+    return dataset

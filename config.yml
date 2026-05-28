@@ -5,7 +5,6 @@ frame_save_dir: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\processed"
 csv_path: "C:\\Users\\sawna\\Desktop\\HPPK_DP\\data\\raw\\pt.csv"
 
 frame_rate       : 45  # seconds per frame (0.25 = 4fps)
-target_max       : 400   # max frames to extract per part
 
 
 # AUGMENTATION 
@@ -13,6 +12,8 @@ target_max       : 400   # max frames to extract per part
 yolo_dir: "C:\\Users\\sawna\\Desktop\\error_test\\case"
 yolo_save_dir: "C:\\Users\\sawna\\Desktop\\error_test\\pcs"
 
+task: "Detection"
 copy: true
 multiplier: 2
 mixup: false
+
