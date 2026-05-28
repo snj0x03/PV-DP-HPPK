@@ -9,6 +9,9 @@ def MixUp(image, bboxes, labels, ex_image, ex_bboxes, ex_labels):
     c1 = np.pad(image, ((0, W - w1), (0, H - h1), (0, 0)), 'constant')
     c2 = np.pad(ex_image, ((0, W - w2), (0, H - h2), (0, 0)), 'constant')
 
+    bboxes = [list(bbox) for bbox in bboxes]
+    ex_bboxes = [list(bbox) for bbox in ex_bboxes]
+
     for bbox in bboxes:
         bbox[0] = bbox[0] * (h1 / H)
         bbox[1] = bbox[1] * (w1 / W)

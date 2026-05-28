@@ -7,15 +7,24 @@ Handles frame extraction from raw videos and image augmentation for model traini
 ## Project Structure
 
 ```
-PV-DP-HPPK/
+PV-DP-HPPK-v0/
 ├── config.yml
 ├── main.py
 ├── requirements.txt
 └── src/
-    ├── run_extraction.py
-    ├── run_augmentation.py
-    ├── augment.py
-    └── utils.py
+    ├── Augmentation/
+    │   ├── Custom.py
+    │   ├── Pipeline.py
+    │   ├── run.py
+    │   └── transform.py
+    ├── Dataset/
+    │   ├── video.py
+    │   └── yolo.py
+    ├── Frames/
+    │   ├── run.py
+    │   └── transform.py
+    └── utils/
+        └── directory.py
 ```
 
 
@@ -37,21 +46,19 @@ pip install -r requirements.txt
 Edit `config.yml` before running:
 
 ```yaml
-video_dir      : ""      # path to video files
-frame_save_dir : ""      # path for output of frame extraction
-csv_path       : ""      # path to parts name csv
+# Frame extraction
+video_dir      : ""      # path to raw video folders
+frame_save_dir : ""      # path for extracted frame output
+csv_path       : ""      # path to parts name CSV
+frame_rate     : 45      # seconds per frame (e.g. 0.25 = 4 fps, 45 = 1 frame per 45s)
 
-frame_rate     : 0.25    # seconds per frame (0.25 = 4 fps)
-target_max     : 400     # max frames to extract per part
-
-yolo_dir       : ""      # Input YOLO directory
-yolo_save_dir  : ""      # Output YOLO directory
-
-blur:
-    apply:     : true    # apply blur
-
-noise:
-    apply      : true    # apply noise
+# Augmentation
+yolo_dir       : ""      # input YOLO dataset directory
+yolo_save_dir  : ""      # output directory for augmented dataset
+task           : "Classification"  # "Detection" or "Classification"
+copy           : true    # copy originals into output
+multiplier     : 6       # number of augmented copies per image
+mixup          : true    # enable MixUp blending (Detection only)
 ```
 
 
@@ -95,7 +102,6 @@ python main.py --option augment
 | `opencv-python` | Video reading and frame extraction |
 | `Pillow` | Image loading and saving |
 | `numpy` | Array operations for augmentation |
-| `pandas` | Reading the HP parts Excel file |
+| `pandas` | Reading the HP parts CSV file |
 | `pyyaml` | Parsing `config.yml` |
-| `imagehash` | Perceptual hash deduplication |
 | `albumentations` | Image augmentation pipeline |
