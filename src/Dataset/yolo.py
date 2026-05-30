@@ -1,13 +1,13 @@
 import os
 
-def yolo_dataset(file_dir: str) -> list[dict[str, str | list[int] | list[list[int]]]]:
+def yolo_dataset(file_dir: str) -> list[dict]:
     image_dir = os.path.join(file_dir, "images")
     label_dir = os.path.join(file_dir, "labels")
     dataset = []
-    for filename in os.listdir(image_dir):
-        if filename.endswith((".jpg")):
-            image_path = os.path.join(image_dir, filename)
-            label_path = os.path.join(label_dir, filename.replace(".jpg", ".txt"))
+    for file_name in os.listdir(image_dir):
+        if file_name.endswith((".jpg")):
+            image_path = os.path.join(image_dir, file_name)
+            label_path = os.path.join(label_dir, file_name.replace(".jpg", ".txt"))
 
             labels, bboxes = [], []
             with open(label_path, "r") as f:

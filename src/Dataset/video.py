@@ -1,36 +1,20 @@
-from utils.directory import load_part_names
 import os
+from utils.helper import load_part_names
 
-
-def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict[str, str]]:
+def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict]:
     part_names = load_part_names(csv_path)
     dataset = []
-    for dirname in os.listdir(file_dir):
-        p = dirname
-        d = os.path.join(file_dir, dirname)
-        if os.path.isdir(d):
-            for filename in os.listdir(d):
-                if filename.endswith((".mp4")):
+    for dir_name in os.listdir(file_dir):
+        part = dir_name
+        new_dir_name = os.path.join(file_dir, dir_name)
+        if os.path.isdir(new_dir_name):
+            for file_name in os.listdir(new_dir_name):
+                if file_name.endswith((".mp4")):
                     target =  {
-                        "video_path": os.path.join(d, filename), 
-                        "save_dir": os.path.join(save_dir, p), 
-                        "part_name": part_names[p]
+                        "video_path": os.path.join(new_dir_name, file_name), 
+                        "save_dir": os.path.join(save_dir, part), 
+                        "part_name": part_names[part]
                     }
                     dataset.append(target)
-
     return dataset 
 
-def image_dataset(file_dir, save_dir):
-    dataset = []
-    for dirname in os.listdir(file_dir):
-        p = dirname
-        d = os.path.join(file_dir, dirname)
-        if os.path.isdir(d):
-            for filename in os.listdir(d):
-                if filename.endswith((".jpg")):
-                    target = {
-                        "image_path": os.path.join(d, filename),
-                        "save_dir": os.path.join(save_dir, p),
-                    }
-                    dataset.append(target)
-    return dataset

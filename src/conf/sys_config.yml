@@ -1,0 +1,19 @@
+# EXTRACTION
+
+video_dir: "C:\\Users\\sawna\\Desktop\\P2"
+frame_save_dir: "C:\\Users\\sawna\\Desktop\\PO" 
+csv_path: "C:\\Users\\sawna\\Desktop\\P2\\ttt.csv"
+
+frame_rate: 0.8  # seconds per frame (0.25 = 4fps)
+
+
+# AUGMENTATION 
+
+yolo_dir: "C:\\Users\\sawna\\Desktop\\P3"
+yolo_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
+
+task: "Classification" # Detectio or Classification
+copy: True
+multiplier: 3
+mixup: True
+

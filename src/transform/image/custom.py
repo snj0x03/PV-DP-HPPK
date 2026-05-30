@@ -1,6 +1,7 @@
 import numpy as np
 
-def MixUp(image, bboxes, labels, ex_image, ex_bboxes, ex_labels):
+def mixup(image: np.ndarray, bboxes: list, labels: list, 
+          ex_image: np.ndarray, ex_bboxes: list, ex_labels:list) -> dict:
 
     w1, h1 = image.shape[:2]
     w2, h2 = ex_image.shape[:2]
