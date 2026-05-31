@@ -5,7 +5,6 @@ from pipeline.extraction import frame_extraction_pipeline
 from pipeline.classification import classification_pipeline
 from pipeline.detection import detection_pipeline 
 
-
 def main():
     # Parse Argument
     parser = argparse.ArgumentParser()
