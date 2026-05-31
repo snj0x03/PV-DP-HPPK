@@ -1,99 +1,179 @@
-# PVision Data Pipeline
+# PVision Data Pipeline (v0)
 
 A data preparation pipeline for HP printer part image datasets.  
-Handles frame extraction from raw videos and image augmentation for model training.
+It handles two independent stages: **frame extraction** from raw `.mp4` videos, and **image augmentation** on annotated YOLO-format datasets.
 
+---
 
 ## Project Structure
 
 ```
 PV-DP-HPPK-v0/
-├── config.yml
-├── main.py
 ├── requirements.txt
 └── src/
-    ├── Augmentation/
-    │   ├── Custom.py
-    │   ├── Pipeline.py
-    │   ├── run.py
-    │   └── transform.py
-    ├── Dataset/
-    │   ├── video.py
-    │   └── yolo.py
-    ├── Frames/
-    │   ├── run.py
-    │   └── transform.py
+    ├── main.py                  # Entry point — parse args, load config, run pipeline
+    ├── conf/
+    │   └── sys_config.yml       # All runtime configuration lives here
+    ├── dataset/
+    │   ├── image.py             # Scans image folders for classification data
+    │   ├── video.py             # Scans video folders, maps folder names to HP part names
+    │   └── yolo.py              # Reads YOLO-format images and label .txt files
+    ├── pipeline/
+    │   ├── extraction.py        # Orchestrates video → frame extraction
+    │   ├── detection.py         # Orchestrates YOLO detection augmentation
+    │   └── classification.py    # Orchestrates classification augmentation
+    ├── transform/
+    │   ├── image/
+    │   │   ├── default.py       # Albumentations transform presets
+    │   │   ├── augment.py       # Applies transforms, returns result tuples
+    │   │   └── custom.py        # Custom MixUp implementation
+    │   └── video/
+    │       └── extract.py       # OpenCV frame extraction logic
+    ├── load/
+    │   └── loader.py            # Saves output images and YOLO label files
     └── utils/
-        └── directory.py
+        └── helper.py            # Directory creation, CSV loading, pair generation
 ```
 
+---
 
 ## Setup
 
 ### 1. Clone the repository
+
 ```bash
 git clone <repo-url>
-cd PV-DP-HPPK
+cd PV-DP-HPPK-v0
 ```
 
 ### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
+### 3. Edit the config file
+
+Open `src/conf/sys_config.yml` and fill in the paths and options for your environment before running anything.
+
+---
+
 ## Configuration
 
-Edit `config.yml` before running:
+All settings are in `src/conf/sys_config.yml`:
 
 ```yaml
-# Frame extraction
-video_dir      : ""      # path to raw video folders
-frame_save_dir : ""      # path for extracted frame output
-csv_path       : ""      # path to parts name CSV
-frame_rate     : 45      # seconds per frame (e.g. 0.25 = 4 fps, 45 = 1 frame per 45s)
+# --- Frame Extraction ---
+video_dir:      ""    # Root folder containing subfolders of .mp4 videos (one subfolder per part)
+frame_save_dir: ""    # Where extracted frames will be saved
+csv_path:       ""    # Path to a CSV file mapping folder names to HP part names
+frame_rate:     0.8   # Seconds between extracted frames (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
 
-# Augmentation
-yolo_dir       : ""      # input YOLO dataset directory
-yolo_save_dir  : ""      # output directory for augmented dataset
-task           : "Classification"  # "Detection" or "Classification"
-copy           : true    # copy originals into output
-multiplier     : 6       # number of augmented copies per image
-mixup          : true    # enable MixUp blending (Detection only)
+# --- Augmentation ---
+yolo_dir:       ""    # Input: annotated YOLO dataset directory (must contain images/ and labels/)
+yolo_save_dir:  ""    # Output: where augmented dataset will be saved
+task:           "Classification"   # "Detection" or "Classification"
+copy:           True  # If True, each original image is also copied to the output unchanged
+multiplier:     3     # Number of augmented variants to generate per original image
+mixup:          True  # If True, apply MixUp blending between random image pairs (Detection only)
 ```
 
+### CSV format (for frame extraction)
+
+The CSV file maps raw video subfolder names to readable HP part names.  
+The first column should be the folder name, the second column the part name:
+
+```
+P001,SVC_HP LaserJet Fuser 220V Kit
+P002,SVC_HP LaserJet CYM Managed Imaging Drum
+...
+```
+
+### Expected input structure (for augmentation)
+
+```
+yolo_dir/
+├── images/
+│   ├── img001.jpg
+│   └── img002.jpg
+└── labels/
+    ├── img001.txt    # YOLO format: class cx cy w h (one object per line)
+    └── img002.txt
+```
+
+---
 
 ## Usage
 
-Run Video Frame Extraction:
+All commands are run from inside the `src/` directory:
+
+```bash
+cd src
+```
+
+### Stage 1 — Extract frames from videos
 
 ```bash
 python main.py --option extract
 ```
 
-Run augmentation on YOLO dataset:
+This scans `video_dir` for subfolders, finds `.mp4` files inside each, extracts one frame every `frame_rate` seconds, and saves them to `frame_save_dir/<part_folder>/`.  
+Filenames are generated automatically using UUID to avoid collisions.
+
+### Stage 2 — Annotate extracted frames
+
+Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the extracted frames in YOLO format before running augmentation.
+
+### Stage 3 — Augment the annotated dataset
+
+For a **Detection** task (bounding boxes preserved):
 
 ```bash
 python main.py --option augment
+# Requires: task: "Detection" in sys_config.yml
 ```
 
+For a **Classification** task (no bounding boxes):
 
-## Pipeline Stages
+```bash
+python main.py --option augment
+# Requires: task: "Classification" in sys_config.yml
+```
 
-### Stage 1 — Frame Extraction
-- Reads videos 
-- Maps part folders to HP part names via the Excel file
-- Extracts frames at 4 fps, up to `target_max` per part
-- Output 
+---
 
-### Stage 2 - Annotation
-- Annotate Extracte frame with Roboflow or AnyLabeling
+## Pipeline Details
 
-### Stage 3 — Augmentation
-- Reads annotated images (YOLO format)
-- Applies flip, brightness, blur, noise, rotate, MixUp, Mosaic
-- Output 
+### Frame Extraction
 
+1. Loads the CSV to build a `folder_name → part_name` mapping.
+2. Walks `video_dir`, finds each `.mp4` file in each subfolder.
+3. Opens each video with OpenCV; extracts a frame every `frame_rate` seconds.
+4. Saves each frame as a `.jpg` with the part name embedded in the filename.
+5. All videos are processed in **parallel** using Python `multiprocessing`.
 
+### Detection Augmentation
+
+1. Reads all images and their YOLO label files from `yolo_dir`.
+2. Randomly pairs each image with another image (for MixUp).
+3. For each image:
+   - Optionally copies the original unchanged (`copy: True`).
+   - Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
+   - Optionally applies **MixUp**: blends two images together with a random alpha (0.6–0.7) and merges their bounding box lists.
+4. Saves output images and updated `.txt` label files with UUID filenames.
+5. Bounding boxes are validated — any result where all boxes are lost (e.g. cropped out) is discarded.
+6. Runs in **parallel** using Python `multiprocessing`.
+
+### Classification Augmentation
+
+Same as Detection but without bounding box handling:
+1. Reads images from subdirectory-per-class folder structure.
+2. Optionally copies the original.
+3. Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±30°), Gaussian blur, Gaussian noise.
+4. Saves output images with UUID filenames into matching class subdirectories.
+5. Runs in **parallel** using Python `multiprocessing`.
+
+---
 
 ## Dependencies
 
@@ -101,7 +181,13 @@ python main.py --option augment
 |---|---|
 | `opencv-python` | Video reading and frame extraction |
 | `Pillow` | Image loading and saving |
-| `numpy` | Array operations for augmentation |
-| `pandas` | Reading the HP parts CSV file |
-| `pyyaml` | Parsing `config.yml` |
-| `albumentations` | Image augmentation pipeline |
+| `numpy` | Array operations for MixUp augmentation |
+| `pandas` | Reading the HP parts name CSV file |
+| `pyyaml` | Parsing `sys_config.yml` |
+| `albumentations` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
+
+Install all at once:
+
+```bash
+pip install -r requirements.txt
+```

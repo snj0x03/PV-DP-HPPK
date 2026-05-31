@@ -35,7 +35,3 @@ def frame_extraction_pipeline(file_dir: str, save_dir: str, frame_rate: float, c
             pass
 
     print("Frame Extraction Completed")
-
-
-
-    
