@@ -6,11 +6,11 @@ def yolo_dataset(file_dir: str) -> list[dict]:
     dataset = []
     for file_name in os.listdir(image_dir):
         if file_name.endswith((".jpg")):
-            image_path = os.path.join(image_dir, file_name)
-            label_path = os.path.join(label_dir, file_name.replace(".jpg", ".txt"))
-
-            labels, bboxes = [], []
             try:
+                image_path = os.path.join(image_dir, file_name)
+                label_path = os.path.join(label_dir, file_name.replace(".jpg", ".txt"))
+
+                labels, bboxes = [], []
                 with open(label_path, "r") as f:
                     for lines in f.readlines():
                         label, boxes = lines.split()[0], lines.split()[1:]

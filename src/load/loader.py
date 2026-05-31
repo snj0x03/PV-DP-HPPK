@@ -5,15 +5,21 @@ import numpy as np
 
 
 def save_image(image: np.ndarray, save_dir: str, file_name: str) -> None:
-    Image.fromarray(image).save(os.path.join(save_dir, file_name))
+    try:
+        Image.fromarray(image).save(os.path.join(save_dir, file_name))
+    except:
+        pass
 
 
 def save_label(labels: list, bboxes: list, save_dir: str, file_name: str) -> None:
-    label_name = file_name.replace(".jpg", ".txt")
-    with open(os.path.join(save_dir, label_name), "w") as f:
-        for label, bbox in zip(labels, bboxes):
-            cx, cy, w, h = bbox
-            f.write(f"{int(label)} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}\n")
+    try:
+        label_name = file_name.replace(".jpg", ".txt")
+        with open(os.path.join(save_dir, label_name), "w") as f:
+            for label, bbox in zip(labels, bboxes):
+                cx, cy, w, h = bbox
+                f.write(f"{int(label)} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}\n")
+    except:
+        pass
 
 
 def save_file_random(image: np.ndarray, labels: list, bboxes: list, save_dir: str) -> None:

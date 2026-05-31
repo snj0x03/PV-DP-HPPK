@@ -9,11 +9,11 @@ frame_rate: 0.8  # seconds per frame (0.25 = 4fps)
 
 # AUGMENTATION 
 
-yolo_dir: "C:\\Users\\sawna\\Desktop\\Full\\F\\train"
+yolo_dir: "C:\\Users\\sawna\\Desktop\\P3"
 yolo_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
 
-task: "Detection" # Detectio or Classification
-copy: True
-multiplier: 0
+task: "Classification" # Detectio or Classification
+copy: False 
+multiplier: 1
 mixup: False
 
