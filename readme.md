@@ -1,4 +1,4 @@
-# PVision Data Pipeline (v0)
+# PVision Data Pipeline
 
 A data preparation pipeline for HP printer part image datasets.  
 It handles two independent stages: **frame extraction** from raw `.mp4` videos, and **image augmentation** on annotated YOLO-format datasets.
@@ -8,7 +8,7 @@ It handles two independent stages: **frame extraction** from raw `.mp4` videos, 
 ## Project Structure
 
 ```
-PV-DP-HPPK-v0/
+PV-DP-HPPK/
 ├── requirements.txt
 └── src/
     ├── main.py                  # Entry point — parse args, load config, run pipeline
@@ -43,7 +43,7 @@ PV-DP-HPPK-v0/
 
 ```bash
 git clone <repo-url>
-cd PV-DP-HPPK-v0
+cd PV-DP-HPPK
 ```
 
 ### 2. Install dependencies
@@ -185,6 +185,7 @@ Same as Detection but without bounding box handling:
 | `pandas` | Reading the HP parts name CSV file |
 | `pyyaml` | Parsing `sys_config.yml` |
 | `albumentations` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
+| `tqdm` | Progress bar for pipeline processing |
 
 Install all at once:
 
