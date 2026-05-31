@@ -16,21 +16,31 @@ def process_target(args: list, copy: bool, multiplier: int, mixup: bool, save_di
         # Load
         if result:
             image, labels, bboxes = result
-            save_file_random(image, labels, bboxes, save_dir) 
+            try:
+                save_file_random(image, labels, bboxes, save_dir) 
+            except:
+                pass
 
     for _ in range(multiplier):
         result = detection_transform(target, augment_transform) 
         # Load
         if result:
             image, labels, bboxes = result
-            save_file_random(image, labels, bboxes, save_dir) 
+            try:
+                save_file_random(image, labels, bboxes, save_dir) 
+            except:
+                pass
+            
 
     if mixup:
         result = mixup_transform(target, random_target) # Transform
         # Load
         if result:
             image, labels, bboxes = result
-            save_file_random(image, labels, bboxes, save_dir)
+            try: 
+                save_file_random(image, labels, bboxes, save_dir)
+            except:
+                pass
 
     return 
     
