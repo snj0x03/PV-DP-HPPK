@@ -13,6 +13,9 @@ Handles three independent stages: **frame extraction** from raw videos, **image 
 4. [Configuration](#configuration-srcconfsys_configyml)
 5. [Pipeline Options](#pipeline-options)
 6. [Dataset Folder Management](#dataset-folder-management)
+   - [Safety warning](#safety-warning)
+   - [Recommended folder naming](#recommended-folder-naming)
+   - [Adding more data later](#adding-more-data-later)
 7. [Pipeline Logic](#pipeline-logic)
 8. [Jupyter Notebook Workflow (on AI server)](#jupyter-notebook-workflow-on-ai-server)
 9. [Dependencies](#dependencies)
@@ -171,6 +174,65 @@ P001,SVC_HP LaserJet Fuser 220V Kit
 P002,SVC_HP LaserJet CYM Managed Imaging Drum
 ```
 
+### Video upload rules
+
+Extraction behavior differs by `task` setting.
+
+#### Classification (`task: "Classification"`)
+
+Folder names are mapped to HP part names via CSV. Only the folder name matters — video filenames inside can be anything.
+
+```
+video_dir/
+├── P001/            ← folder name must match CSV col0
+│   ├── clip1.mp4    ← filename is free
+│   └── clip2.mp4
+└── P002/
+    └── recording.mp4
+```
+
+After extraction, frames are saved as `{part_name}-{uuid}.jpg`:
+
+```
+frame_save_dir/
+├── P001/
+│   ├── SVC_HP LaserJet Fuser 220V Kit-3f2a1c.jpg
+│   └── SVC_HP LaserJet Fuser 220V Kit-9d4b2e.jpg
+└── P002/
+    └── SVC_HP LaserJet CYM Managed Imaging Drum-7a1f3c.jpg
+```
+
+| Item | Rule |
+|------|------|
+| **Folder name** | Must exactly match CSV `col0` |
+| **Video filename** | Free — any `.mp4` filename works |
+| **Folder not in CSV** | Silently skipped (no error) |
+
+#### Detection (`task: "Detection"`)
+
+Multiple parts appear together in a single frame, so there is no per-folder class mapping. CSV is not used. Frames are saved with UUID filenames only — class info is assigned later during bbox annotation.
+
+```
+video_dir/
+├── scene_01/        ← folder name is used only as output subfolder
+│   └── clip.mp4     ← multiple parts visible in each frame
+└── scene_02/
+    └── clip.mp4
+```
+
+After extraction, frames are saved as `{uuid}.jpg`:
+
+```
+frame_save_dir/
+├── scene_01/
+│   ├── 3f2a1c.jpg
+│   └── 9d4b2e.jpg
+└── scene_02/
+    └── 7a1f3c.jpg
+```
+
+After extraction, annotate the frames with bounding boxes using Roboflow or AnyLabeling, then point `yolo_dir` to the exported YOLO-format dataset before running `augment`.
+
 ---
 
 ## Pipeline Options
@@ -263,6 +325,47 @@ yolo_save_dir: "C:/datasets/augmented_v2"
 ```
 
 This way you can always go back to a previous dataset without re-running the pipeline.
+
+### Adding more data later
+
+When new videos are available, follow the appropriate case below.
+
+**Case 1 — More videos for existing classes:**
+
+```
+1. Add new .mp4 files to the existing subfolders in video_dir
+2. Change frame_save_dir to a new path (e.g. frames_v2)
+   → python main.py -o extract
+
+3. Annotate only the new frames
+
+4. Set yolo_dir to the new annotated folder
+   Set yolo_save_dir to a new path (e.g. augmented_v2)
+   → python main.py -o augment
+
+5. Set yolo_dir = augmented_v2, yolo_save_dir = split_v2
+   → python main.py -o split
+
+6. Retrain the model on split_v2
+```
+
+**Case 2 — Adding a new class (new part type):**
+
+```
+1. Create a new subfolder in video_dir matching the new CSV entry
+2. Add the new part to part_names.csv
+3. Extract + annotate the new class frames
+4. Merge the new annotated class folder into the existing annotated dataset
+5. Re-run augment → split on the full merged dataset (new save_dir path)
+6. Retrain the model
+```
+
+**Key principle:** always bump the `save_dir` version when re-running so old datasets are preserved for comparison.
+
+```
+frames_v1/   augmented_v1/   split_v1/   ← first training run
+frames_v2/   augmented_v2/   split_v2/   ← after adding more data
+```
 
 ---
 

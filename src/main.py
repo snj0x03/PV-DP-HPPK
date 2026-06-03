@@ -87,6 +87,7 @@ def main():
         _check_save_dir(FRAME_SAVE_DIR, "extract")
         frame_extraction_pipeline(
             VIDEO_DIR, FRAME_SAVE_DIR, FRAME_RATE, CSV_PATH,
+            task=TASK,
             deduplicate=DEDUPLICATE,
             hash_size=HASH_SIZE,
             hash_threshold=HASH_THRESHOLD,
