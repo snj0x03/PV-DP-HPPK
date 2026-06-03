@@ -1,19 +1,49 @@
 # EXTRACTION
 
-video_dir: "C:\\Users\\sawna\\Desktop\\P2"
-frame_save_dir: "C:\\Users\\sawna\\Desktop\\PO" 
-csv_path: "C:\\Users\\sawna\\Desktop\\P2\\ttt.csv"
+video_dir: ""       # root folder containing subfolders of .mp4 videos (one subfolder per part)
+frame_save_dir: ""  # where extracted frames will be saved
+csv_path: ""        # CSV mapping folder names → HP part names (no header, col0: folder, col1: part name)
 
-frame_rate: 0.8  # seconds per frame (0.25 = 4fps)
+frame_rate: 0.8  # seconds per frame (0.8 = ~1.25fps)
 
 
-# AUGMENTATION 
+# AUGMENTATION
 
-yolo_dir: "C:\\Users\\sawna\\Desktop\\P3"
-yolo_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
+yolo_dir: ""        # input: annotated dataset directory (images/ + labels/ for Detection, class subfolders for Classification)
+yolo_save_dir: ""   # output: where augmented / split / lc results will be saved
 
-task: "Classification" # Detectio or Classification
-copy: False 
+task: "Classification"  # "Detection" or "Classification"
+copy: False
 multiplier: 1
-mixup: False
+mixup: False    # Blend 2 images (Detection only)
+mosaic: False   # Combine 4 images into 2×2 grid (Detection only)
 
+
+# DEDUPLICATION
+# threshold=0: exact duplicates only / threshold=5: near-duplicates (recommended)
+
+deduplicate: True
+hash_size: 8        # avg-hash grid size (8 = 64-bit hash)
+hash_threshold: 5   # Hamming distance threshold
+
+
+# SPLIT
+# mode: "chunk" prevents adjacent-frame leakage across splits (recommended)
+#       "random" shuffles individual files
+
+split_mode: "chunk"
+split_ratios: [0.7, 0.15, 0.15]  # train / val / test
+split_seed: 42
+chunk_size: 10  # consecutive frames per chunk (chunk mode only)
+
+
+# CLASS IMBALANCE
+
+imbalance_ratio_warn: 3.0  # warn if max:min count ratio exceeds this
+
+
+# LEARNING CURVE
+# Creates staged subsets: stage_50/, stage_100/, ... under yolo_save_dir
+
+lc_stages: [50, 100, 150, 300]
+lc_seed: 42

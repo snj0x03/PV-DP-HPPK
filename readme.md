@@ -1,7 +1,21 @@
 # PVision Data Pipeline
 
-A data preparation pipeline for HP printer part image datasets.  
-It handles two independent stages: **frame extraction** from raw `.mp4` videos, and **image augmentation** on annotated YOLO-format datasets.
+A config-driven data preparation pipeline for HP printer part image datasets.  
+Handles three independent stages: **frame extraction** from raw videos, **image augmentation** on annotated datasets, and **dataset splitting** into train/val/test sets.
+
+---
+
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Setup](#setup)
+3. [Quick Start — Full Workflow](#quick-start--full-workflow)
+4. [Configuration](#configuration-srcconfsys_configyml)
+5. [Pipeline Options](#pipeline-options)
+6. [Dataset Folder Management](#dataset-folder-management)
+7. [Pipeline Logic](#pipeline-logic)
+8. [Jupyter Notebook Workflow (on AI server)](#jupyter-notebook-workflow-on-ai-server)
+9. [Dependencies](#dependencies)
 
 ---
 
@@ -11,167 +25,363 @@ It handles two independent stages: **frame extraction** from raw `.mp4` videos, 
 PV-DP-HPPK/
 ├── requirements.txt
 └── src/
-    ├── main.py                  # Entry point — parse args, load config, run pipeline
+    ├── main.py                        # Entry point — parses args, loads config, routes to pipeline
     ├── conf/
-    │   └── sys_config.yml       # All runtime configuration lives here
-    ├── dataset/
-    │   ├── image.py             # Scans image folders for classification data
-    │   ├── video.py             # Scans video folders, maps folder names to HP part names
-    │   └── yolo.py              # Reads YOLO-format images and label .txt files
+    │   └── sys_config.yml             # All runtime configuration lives here
+    ├── reader/
+    │   ├── video.py                   # Scans video folders, maps folder names → HP part names via CSV
+    │   ├── image.py                   # Scans image folders for classification (one subfolder per class)
+    │   └── detection.py               # Reads YOLO-format datasets (images/ + labels/)
     ├── pipeline/
-    │   ├── extraction.py        # Orchestrates video → frame extraction
-    │   ├── detection.py         # Orchestrates YOLO detection augmentation
-    │   └── classification.py    # Orchestrates classification augmentation
-    ├── transform/
+    │   ├── extraction.py              # Video → frame extraction (parallel, with dedup)
+    │   ├── detection.py               # YOLO detection augmentation
+    │   ├── classification.py          # Classification augmentation
+    │   ├── split.py                   # Splits dataset into train/val/test
+    │   └── learning_curve.py          # Creates staged subsets for learning curve experiments
+    ├── augment/
     │   ├── image/
-    │   │   ├── default.py       # Albumentations transform presets
-    │   │   ├── augment.py       # Applies transforms, returns result tuples
-    │   │   └── custom.py        # Custom MixUp implementation
+    │   │   ├── presets.py             # Albumentations transform presets (augment, classify, no-op)
+    │   │   ├── apply.py               # Loads images, runs transforms, returns result tuples
+    │   │   ├── mixup.py               # MixUp: blend 2 images with alpha mixing
+    │   │   └── mosaic.py              # Mosaic: combine 4 images into a 2×2 grid
     │   └── video/
-    │       └── extract.py       # OpenCV frame extraction logic
-    ├── load/
-    │   └── loader.py            # Saves output images and YOLO label files
+    │       └── extract.py             # OpenCV frame extraction with optional deduplication
+    ├── save/
+    │   └── writer.py                  # Writes output images and YOLO label files with UUID filenames
     └── utils/
-        └── helper.py            # Directory creation, CSV loading, pair generation
+        ├── helpers.py                 # Shared helpers: dir creation, CSV loading, pair/group generation
+        ├── dedup.py                   # Average-hash near-duplicate frame filtering
+        ├── stats.py                   # Class distribution reports and imbalance warnings
+        └── split.py                   # random_split and chunk_split logic
 ```
 
 ---
 
 ## Setup
 
-### 1. Clone the repository
-
 ```bash
 git clone <repo-url>
 cd PV-DP-HPPK
-```
-
-### 2. Install dependencies
-
-```bash
 pip install -r requirements.txt
+cd src
 ```
 
-### 3. Edit the config file
-
-Open `src/conf/sys_config.yml` and fill in the paths and options for your environment before running anything.
+Edit `src/conf/sys_config.yml` with your local paths before running anything (see [Configuration](#configuration-srcconfsys_configyml)).
 
 ---
 
-## Configuration
+## Quick Start — Full Workflow
 
-All settings are in `src/conf/sys_config.yml`:
+> Follow these steps in order. Each step produces output that the next step uses as input.
+
+### Step 1 — Fill in `sys_config.yml`
+
+Open `src/conf/sys_config.yml` and set all empty path fields:
 
 ```yaml
-# --- Frame Extraction ---
-video_dir:      ""    # Root folder containing subfolders of .mp4 videos (one subfolder per part)
-frame_save_dir: ""    # Where extracted frames will be saved
-csv_path:       ""    # Path to a CSV file mapping folder names to HP part names
-frame_rate:     0.8   # Seconds between extracted frames (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
+video_dir:      "C:/datasets/raw_videos"      # folder containing subfolders of .mp4 files
+frame_save_dir: "C:/datasets/frames_v1"       # where extracted frames will be saved
+csv_path:       "C:/datasets/part_names.csv"  # CSV mapping folder names → part names
 
-# --- Augmentation ---
-yolo_dir:       ""    # Input: annotated YOLO dataset directory (must contain images/ and labels/)
-yolo_save_dir:  ""    # Output: where augmented dataset will be saved
-task:           "Classification"   # "Detection" or "Classification"
-copy:           True  # If True, each original image is also copied to the output unchanged
-multiplier:     3     # Number of augmented variants to generate per original image
-mixup:          True  # If True, apply MixUp blending between random image pairs (Detection only)
+yolo_dir:       "C:/datasets/annotated"       # annotated dataset (input for augment/split/lc)
+yolo_save_dir:  "C:/datasets/augmented_v1"    # where pipeline output will be saved
 ```
 
-### CSV format (for frame extraction)
+### Step 2 — Extract frames from videos
 
-The CSV file maps raw video subfolder names to readable HP part names.  
-The first column should be the folder name, the second column the part name:
+```bash
+python main.py -o extract
+```
+
+Frames are saved to `frame_save_dir/`. Near-duplicate frames are automatically filtered.
+
+### Step 3 — Annotate the extracted frames
+
+Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the frames in YOLO format. Point `yolo_dir` to the annotated dataset before the next step.
+
+### Step 4 — Augment the annotated dataset
+
+```bash
+python main.py -o augment
+```
+
+Set `task: "Classification"` or `task: "Detection"` in config first. Augmented images are saved to `yolo_save_dir/`.
+
+### Step 5 — Split into train / val / test
+
+```bash
+python main.py -o split
+```
+
+Point `yolo_dir` to the augmented output from Step 4. Results are saved to `yolo_save_dir/train/`, `val/`, `test/`.
+
+### Step 6 (optional) — Create learning curve datasets
+
+```bash
+python main.py -o lc
+```
+
+Creates staged subsets (`stage_50/`, `stage_100/`, etc.) for incremental training experiments.
+
+---
+
+## Configuration (`src/conf/sys_config.yml`)
+
+```yaml
+# ── EXTRACTION ─────────────────────────────────────────
+video_dir:      ""    # root folder containing subfolders of .mp4 videos (one subfolder per part)
+frame_save_dir: ""    # where extracted frames will be saved
+csv_path:       ""    # CSV mapping folder names → HP part names (no header, col0: folder, col1: part name)
+frame_rate:     0.8   # seconds between extracted frames (0.8 ≈ 1.25 fps)
+
+# ── AUGMENTATION ───────────────────────────────────────
+yolo_dir:       ""    # input: annotated dataset directory
+yolo_save_dir:  ""    # output: where augmented / split / lc results will be saved
+task:   "Classification"  # "Detection" or "Classification"
+copy:   False         # if True, copy each original image to output unchanged
+multiplier: 3         # augmented variants per image
+mixup:  False         # MixUp: blend 2 images with random alpha (Detection only)
+mosaic: False         # Mosaic: combine 4 images into a 2×2 grid (Detection only)
+
+# ── DEDUPLICATION ──────────────────────────────────────
+deduplicate:    True  # remove near-duplicate frames during extraction
+hash_size:      8     # average-hash grid size (8 = 64-bit hash)
+hash_threshold: 5     # Hamming distance threshold (0 = exact match only, 5 = near-duplicates)
+
+# ── SPLIT ──────────────────────────────────────────────
+split_mode:   "chunk"           # "chunk" (recommended for video data) or "random"
+split_ratios: [0.7, 0.15, 0.15] # train / val / test
+split_seed:   42
+chunk_size:   10      # consecutive frames per chunk (chunk mode only)
+
+# ── CLASS IMBALANCE ────────────────────────────────────
+imbalance_ratio_warn: 3.0  # warn if max:min class count ratio exceeds this
+
+# ── LEARNING CURVE ─────────────────────────────────────
+lc_stages: [50, 100, 150, 300]  # images per class per stage
+lc_seed:   42
+```
+
+### CSV format
+
+The CSV file has no header. Column 0 is the video subfolder name, column 1 is the HP part name used when saving frames:
 
 ```
 P001,SVC_HP LaserJet Fuser 220V Kit
 P002,SVC_HP LaserJet CYM Managed Imaging Drum
-...
-```
-
-### Expected input structure (for augmentation)
-
-```
-yolo_dir/
-├── images/
-│   ├── img001.jpg
-│   └── img002.jpg
-└── labels/
-    ├── img001.txt    # YOLO format: class cx cy w h (one object per line)
-    └── img002.txt
 ```
 
 ---
 
-## Usage
+## Pipeline Options
 
-All commands are run from inside the `src/` directory:
+All commands are run from `src/`:
 
 ```bash
 cd src
 ```
 
-### Stage 1 — Extract frames from videos
+| Option | Command | Description |
+|--------|---------|-------------|
+| `extract` | `python main.py -o extract` | Extract frames from `.mp4` videos, filter near-duplicates |
+| `augment` | `python main.py -o augment` | Augment annotated images (Classification or Detection) |
+| `split`   | `python main.py -o split`   | Split dataset into train / val / test |
+| `lc`      | `python main.py -o lc`      | Create staged subsets for learning curve experiments |
 
-```bash
-python main.py --option extract
-```
+### extract
 
-This scans `video_dir` for subfolders, finds `.mp4` files inside each, extracts one frame every `frame_rate` seconds, and saves them to `frame_save_dir/<part_folder>/`.  
-Filenames are generated automatically using UUID to avoid collisions.
+Scans `video_dir` for subfolders of `.mp4` files, extracts one frame every `frame_rate` seconds, filters near-duplicate frames (average-hash with Hamming distance), and saves to `frame_save_dir/`.  
+After extraction, prints a class distribution report and saves `class_distribution.csv`.
 
-### Stage 2 — Annotate extracted frames
+### augment
 
-Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the extracted frames in YOLO format before running augmentation.
+**Classification** (`task: "Classification"`): Applies flip, brightness/contrast, rotation (±30°), blur, noise.  
+**Detection** (`task: "Detection"`): Same transforms with ±60° rotation + hue/saturation shift. Bounding boxes are preserved in YOLO format; results where all boxes are lost are discarded.
 
-### Stage 3 — Augment the annotated dataset
+- **MixUp** (`mixup: True`): Blends 2 images with a random alpha (0.6–0.7) and merges their bbox lists. Detection only.
+- **Mosaic** (`mosaic: True`): Combines 4 random images into a 2×2 grid. Bounding boxes are remapped and clipped to the canvas. Detection only.
 
-For a **Detection** task (bounding boxes preserved):
+After augmentation, prints a class distribution report.
 
-```bash
-python main.py --option augment
-# Requires: task: "Detection" in sys_config.yml
-```
+### split
 
-For a **Classification** task (no bounding boxes):
+Reads images from `yolo_dir` (one subfolder per class), splits into `train/`, `val/`, `test/` under `yolo_save_dir`.
 
-```bash
-python main.py --option augment
-# Requires: task: "Classification" in sys_config.yml
-```
+**Split modes:**
+- **`chunk`** (recommended): Groups consecutive frames into chunks of `chunk_size`, shuffles chunks, then assigns whole chunks to splits. Prevents near-duplicate adjacent frames from leaking across train/val/test boundaries.
+- **`random`**: Shuffles individual files per class — simpler but may leak near-duplicates.
+
+Prints class distribution and split distribution tables; saves `class_distribution.csv` and `split_distribution.csv`.
+
+### lc (learning curve)
+
+Creates staged subsets under `yolo_save_dir/stage_50/`, `stage_100/`, `stage_150/`, `stage_300/`.  
+Each stage samples `min(N, available)` images **per class** using a fixed seed.
+
+Example with 3 classes:
+
+| Stage folder | Images per class | Total images |
+|---|---|---|
+| `stage_50/` | 50 | ~150 |
+| `stage_100/` | 100 | ~300 |
+| `stage_150/` | 150 | ~450 |
+| `stage_300/` | 300 | ~900 |
+
+Train the model on each stage and measure validation accuracy to find the point of diminishing returns.
 
 ---
 
-## Pipeline Details
+## Dataset Folder Management
+
+**Output files are never overwritten** — each file is saved with a unique UUID filename (e.g. `part_A-3f2a1c.jpg`). Running a pipeline twice on the same `save_dir` will **add** new files on top of existing ones.
+
+### Safety warning
+
+If the target save directory already contains files, the pipeline will warn you before starting:
+
+```
+[WARNING] save_dir already contains 547 file(s):
+  → C:/datasets/augmented_v1
+  New files from 'augment' will be ADDED on top of existing files.
+  To start fresh, use a different save_dir path in sys_config.yml.
+Proceed? [y/N]:
+```
+
+- Enter `y` to continue and add to existing files.
+- Press Enter or type `N` to abort (existing files are untouched).
+
+### Recommended folder naming
+
+To keep dataset versions separate, change `yolo_save_dir` (or `frame_save_dir`) each time you change settings:
+
+```yaml
+# First run — multiplier: 3
+yolo_save_dir: "C:/datasets/augmented_v1"
+
+# Second run — multiplier: 5, mosaic: True
+yolo_save_dir: "C:/datasets/augmented_v2"
+```
+
+This way you can always go back to a previous dataset without re-running the pipeline.
+
+---
+
+## Pipeline Logic
 
 ### Frame Extraction
 
-1. Loads the CSV to build a `folder_name → part_name` mapping.
-2. Walks `video_dir`, finds each `.mp4` file in each subfolder.
-3. Opens each video with OpenCV; extracts a frame every `frame_rate` seconds.
-4. Saves each frame as a `.jpg` with the part name embedded in the filename.
-5. All videos are processed in **parallel** using Python `multiprocessing`.
+```
+video_dir/{part_folder}/*.mp4
+    ↓  video_dataset()  — maps folder name → part name via CSV
+    ↓  extract_frame()  — sample every N-th frame (interval = fps × frame_rate)
+    ↓  filter_duplicates()  — skip frames within Hamming distance threshold
+    ↓  save_image_random_part()  — saves as {part_name}-{uuid}.jpg
+frame_save_dir/{part_folder}/
+    ↓  imbalance_report()  — prints class counts + warnings
+```
 
 ### Detection Augmentation
 
-1. Reads all images and their YOLO label files from `yolo_dir`.
-2. Randomly pairs each image with another image (for MixUp).
-3. For each image:
-   - Optionally copies the original unchanged (`copy: True`).
-   - Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
-   - Optionally applies **MixUp**: blends two images together with a random alpha (0.6–0.7) and merges their bounding box lists.
-4. Saves output images and updated `.txt` label files with UUID filenames.
-5. Bounding boxes are validated — any result where all boxes are lost (e.g. cropped out) is discarded.
-6. Runs in **parallel** using Python `multiprocessing`.
+```
+yolo_dir/images/ + labels/
+    ↓  yolo_dataset()  — pairs each image with its YOLO label
+    ↓  make_pair_list()  — randomly pairs images for MixUp
+    ↓  for each pair:
+         copy_transform (if copy=True) → save
+         augment_transform × multiplier → save
+         mixup_transform (if mixup=True) → save
+         mosaic_transform (if mosaic=True) → save
+    ↓  invalid results (all bboxes lost) are discarded
+yolo_save_dir/images/ + labels/
+```
 
 ### Classification Augmentation
 
-Same as Detection but without bounding box handling:
-1. Reads images from subdirectory-per-class folder structure.
-2. Optionally copies the original.
-3. Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±30°), Gaussian blur, Gaussian noise.
-4. Saves output images with UUID filenames into matching class subdirectories.
-5. Runs in **parallel** using Python `multiprocessing`.
+```
+yolo_dir/{class_A}/ {class_B}/ ...
+    ↓  image_dataset()  — lists images per class
+    ↓  for each image:
+         empty_transform (if copy=True) → save
+         classify_transform × multiplier → save
+yolo_save_dir/{class_A}/ {class_B}/ ...
+```
+
+### Chunk Split
+
+```
+source/{class}/[frame_0001.jpg ... frame_0300.jpg]  ← sorted by filename
+    ↓  group into chunks of chunk_size (e.g. 10)
+    ↓  shuffle chunks (seed-controlled)
+    ↓  assign chunks to train/val/test at ratio boundaries
+save_dir/train/{class}/  val/{class}/  test/{class}/
+```
+
+Why chunk split? Consecutive video frames are nearly identical. If individual frames are shuffled randomly, the same scene can appear in both train and val — inflating validation accuracy. Chunk split keeps an entire group of similar frames in one split only.
+
+---
+
+## Jupyter Notebook Workflow (on AI server)
+
+After uploading the pipeline output to the school AI server, run the following cells in a Jupyter notebook.
+
+### Training (per stage or split)
+
+```python
+from ultralytics import YOLO
+
+model = YOLO("yolo11n-cls.pt")  # classification
+# model = YOLO("yolo11n.pt")    # detection
+
+model.train(
+    data="stage_150",   # path to the stage or split dataset
+    epochs=50,
+    imgsz=224,
+    project="runs",
+    name="stage_150",
+)
+```
+
+### Recording learning curve results
+
+Run this cell after each training stage (update `stage` and the run name each time):
+
+```python
+import pandas as pd
+import os
+
+results = pd.read_csv("runs/stage_150/results.csv")
+results.columns = results.columns.str.strip()
+
+best_acc = results["metrics/accuracy_top1"].max()   # classification
+# best_acc = results["metrics/mAP50"].max()         # detection
+
+log_path = "lc_results.csv"
+row = pd.DataFrame([{"stage": 150, "best_val_acc": round(best_acc, 4)}])
+row.to_csv(log_path, mode="a", header=not os.path.exists(log_path), index=False)
+print(f"stage 150 → best acc: {best_acc:.4f}")
+```
+
+### Plotting the learning curve
+
+Run once after all stages are complete:
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("lc_results.csv").sort_values("stage")
+print(df)
+
+plt.figure(figsize=(7, 4))
+plt.plot(df["stage"], df["best_val_acc"], marker="o")
+plt.xlabel("Images per class")
+plt.ylabel("Val Accuracy")
+plt.title("Learning Curve")
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("learning_curve.png", dpi=150)
+plt.show()
+```
 
 ---
 
@@ -181,13 +391,11 @@ Same as Detection but without bounding box handling:
 |---|---|
 | `opencv-python` | Video reading and frame extraction |
 | `Pillow` | Image loading and saving |
-| `numpy` | Array operations for MixUp augmentation |
-| `pandas` | Reading the HP parts name CSV file |
+| `numpy` | Array operations (MixUp, average hash) |
+| `pandas` | Reading the HP parts CSV, saving stats reports |
 | `pyyaml` | Parsing `sys_config.yml` |
-| `albumentations` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
-| `tqdm` | Progress bar for pipeline processing |
-
-Install all at once:
+| `albumentations` | Augmentation pipeline (flip, rotate, blur, noise, etc.) |
+| `tqdm` | Progress bars |
 
 ```bash
 pip install -r requirements.txt
