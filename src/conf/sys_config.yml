@@ -2,9 +2,12 @@
 
 video_dir: ""       # root folder containing subfolders of .mp4 videos (one subfolder per part)
 frame_save_dir: ""  # where extracted frames will be saved
-csv_path: ""        # CSV mapping folder names → HP part names (no header, col0: folder, col1: part name)
+csv_path: ""        # required only when video_type: "single" (no header, col0: folder name, col1: part name)
 
 frame_rate: 0.8  # seconds per frame (0.8 = ~1.25fps)
+
+video_type: "single"  # "single" — one part per frame, CSV mapping, filename: {part_name}-{uuid}.jpg
+                      # "multi"  — multiple parts per frame, no CSV, filename: {uuid}.jpg
 
 
 # AUGMENTATION
@@ -12,7 +15,7 @@ frame_rate: 0.8  # seconds per frame (0.8 = ~1.25fps)
 yolo_dir: ""        # input: annotated dataset directory (images/ + labels/ for Detection, class subfolders for Classification)
 yolo_save_dir: ""   # output: where augmented / split / lc results will be saved
 
-task: "Classification"  # "Detection" or "Classification"
+task: "Detection"  # "Detection" (main) or "Classification" (baseline comparison only)
 copy: False
 multiplier: 1
 mixup: False    # Blend 2 images (Detection only)

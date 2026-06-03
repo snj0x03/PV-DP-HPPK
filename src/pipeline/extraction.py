@@ -83,31 +83,31 @@ def frame_extraction_pipeline(
     save_dir: str,
     frame_rate: float,
     csv_path: str,
-    task: str = "Classification",
+    video_type: str = "single",
     deduplicate: bool = False,
     hash_size: int = 8,
     hash_threshold: int = 5,
     warn_ratio: float = 3.0,
 ) -> None:
     """
-    Full extraction pipeline. Behavior differs by task:
+    Full extraction pipeline. Behavior differs by video_type:
 
-    Classification:
+    "single" — one part per frame:
         - Requires csv_path to map subfolder names → part names.
         - Frames saved as {part_name}-{uuid}.jpg inside per-folder subdirs.
         - Prints class distribution report after extraction.
 
-    Detection:
+    "multi" — multiple parts per frame:
         - No CSV needed. Frames saved as {uuid}.jpg inside per-folder subdirs.
-        - No class distribution report (classes are unknown until annotation).
+        - No class distribution report (classes unknown until bbox annotation).
         - After extraction, annotate with Roboflow / AnyLabeling to add bboxes.
     """
     create_save_dir(file_dir, save_dir)
     print("Save Directory Created")
 
-    if task == "Detection":
+    if video_type == "multi":
         dataset = video_dataset_detection(file_dir, save_dir)
-        print(f"Video Dataset Created ({len(dataset)} video(s)) — Detection mode")
+        print(f"Video Dataset Created ({len(dataset)} video(s)) — multi-part mode")
 
         f = partial(
             process_target_detection,
@@ -129,9 +129,9 @@ def frame_extraction_pipeline(
         print(f"Frame Extraction Completed — {total_frames} frame(s) saved")
         print("Next step: annotate extracted frames with bounding boxes (Roboflow / AnyLabeling)")
 
-    else:  # Classification
+    else:  # single
         dataset = video_dataset(file_dir, save_dir, csv_path)
-        print(f"Video Dataset Created ({len(dataset)} video(s)) — Classification mode")
+        print(f"Video Dataset Created ({len(dataset)} video(s)) — single-part mode")
 
         f = partial(
             process_target,

@@ -29,7 +29,7 @@ def _validate_config(cfg: dict, option: str) -> None:
         "split":   ["yolo_dir", "yolo_save_dir"],
         "lc":      ["yolo_save_dir"],
     }
-    if option == "extract" and cfg.get("task") == "Classification":
+    if option == "extract" and cfg.get("video_type", "single") == "single":
         required["extract"].append("csv_path")
     # lc requires either lc_source_dir or yolo_dir as source
     if option == "lc" and not cfg.get("lc_source_dir", ""):
@@ -52,10 +52,17 @@ def _validate_config(cfg: dict, option: str) -> None:
             if src_val and not os.path.isdir(src_val):
                 errors.append(f"  '{src_key}' does not exist: {src_val}")
 
-    # task value
-    task = cfg.get("task", "")
-    if task not in ("Classification", "Detection"):
-        errors.append(f"  'task' must be 'Classification' or 'Detection', got '{task}'")
+    # video_type value (extraction only)
+    if option == "extract":
+        video_type = cfg.get("video_type", "single")
+        if video_type not in ("single", "multi"):
+            errors.append(f"  'video_type' must be 'single' or 'multi', got '{video_type}'")
+
+    # task value (augment / split / lc)
+    if option in ("augment", "split", "lc"):
+        task = cfg.get("task", "")
+        if task not in ("Classification", "Detection"):
+            errors.append(f"  'task' must be 'Classification' or 'Detection', got '{task}'")
 
     # split_ratios sanity
     if option == "split":
@@ -109,6 +116,7 @@ def main():
     FRAME_SAVE_DIR = CFG["frame_save_dir"]
     FRAME_RATE     = CFG["frame_rate"]
     CSV_PATH       = CFG["csv_path"]
+    VIDEO_TYPE     = CFG.get("video_type", "single")
 
     # --- Augmentation ---
     YOLO_DIR      = CFG["yolo_dir"]
@@ -144,7 +152,7 @@ def main():
         _check_save_dir(FRAME_SAVE_DIR, "extract")
         frame_extraction_pipeline(
             VIDEO_DIR, FRAME_SAVE_DIR, FRAME_RATE, CSV_PATH,
-            task=TASK,
+            video_type=VIDEO_TYPE,
             deduplicate=DEDUPLICATE,
             hash_size=HASH_SIZE,
             hash_threshold=HASH_THRESHOLD,

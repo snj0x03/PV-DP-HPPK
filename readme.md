@@ -1,7 +1,11 @@
 # PVision Data Pipeline
 
 A config-driven data preparation pipeline for HP printer part image datasets.  
-Handles three independent stages: **frame extraction** from raw videos, **image augmentation** on annotated datasets, and **dataset splitting** into train/val/test sets.
+The primary task is **Detection** — locating multiple parts within a single frame.  
+Handles four stages: **frame extraction** from raw videos, **image augmentation** on annotated datasets, **dataset splitting** into train/val/test sets, and **learning curve** subset generation.
+
+> **Classification mode** is included for baseline comparison experiments only.  
+> If your scenes contain a single isolated part per image, Classification can serve as a simpler alternative — but the main pipeline is Detection.
 
 ---
 
@@ -92,10 +96,11 @@ Open `src/conf/sys_config.yml` and set all empty path fields:
 ```yaml
 video_dir:      "C:/datasets/raw_videos"      # folder containing subfolders of .mp4 files
 frame_save_dir: "C:/datasets/frames_v1"       # where extracted frames will be saved
-csv_path:       "C:/datasets/part_names.csv"  # CSV mapping folder names → part names
 
 yolo_dir:       "C:/datasets/annotated"       # annotated dataset (input for augment/split/lc)
 yolo_save_dir:  "C:/datasets/augmented_v1"    # where pipeline output will be saved
+
+task: "Detection"  # Detection is the primary task
 ```
 
 ### Step 2 — Extract frames from videos
@@ -116,7 +121,7 @@ Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label
 python main.py -o augment
 ```
 
-Set `task: "Classification"` or `task: "Detection"` in config first. Augmented images are saved to `yolo_save_dir/`.
+`task: "Detection"` is the default. Enable `mosaic: True` to generate synthetic multi-part scenes from single-part annotated images. Augmented images are saved to `yolo_save_dir/`.
 
 ### Step 5 — Split into train / val / test
 
@@ -142,8 +147,10 @@ Creates staged subsets (`stage_50/`, `stage_100/`, etc.) for incremental trainin
 # ── EXTRACTION ─────────────────────────────────────────
 video_dir:      ""    # root folder containing subfolders of .mp4 videos (one subfolder per part)
 frame_save_dir: ""    # where extracted frames will be saved
-csv_path:       ""    # CSV mapping folder names → HP part names (no header, col0: folder, col1: part name)
+csv_path:       ""    # required only when video_type: "single" (col0: folder name, col1: part name)
 frame_rate:     0.8   # seconds between extracted frames (0.8 ≈ 1.25 fps)
+video_type: "single"  # "single" — one part per frame → CSV mapping, {part_name}-{uuid}.jpg
+                      # "multi"  — multiple parts per frame → no CSV, {uuid}.jpg
 
 # ── AUGMENTATION ───────────────────────────────────────
 yolo_dir:       ""    # input: annotated dataset directory
@@ -186,16 +193,16 @@ P002,SVC_HP LaserJet CYM Managed Imaging Drum
 
 ### Video upload rules
 
-Extraction behavior differs by `task` setting.
+Extraction behavior differs by `video_type` setting. This is independent of `task` — you can extract in either mode and train a Detection model either way.
 
-#### Classification (`task: "Classification"`)
+#### `video_type: "single"` — 프레임당 부품 1개 (default)
 
-Folder names are mapped to HP part names via CSV. Only the folder name matters — video filenames inside can be anything.
+CSV로 폴더명 → 부품명 매핑. 파일명에 부품명이 포함되어 어노테이션 시 어떤 부품인지 바로 식별 가능.
 
 ```
 video_dir/
 ├── P001/            ← folder name must match CSV col0
-│   ├── clip1.mp4    ← filename is free
+│   ├── clip1.mp4
 │   └── clip2.mp4
 └── P002/
     └── recording.mp4
@@ -206,8 +213,7 @@ After extraction, frames are saved as `{part_name}-{uuid}.jpg`:
 ```
 frame_save_dir/
 ├── P001/
-│   ├── SVC_HP LaserJet Fuser 220V Kit-3f2a1c.jpg
-│   └── SVC_HP LaserJet Fuser 220V Kit-9d4b2e.jpg
+│   └── SVC_HP LaserJet Fuser 220V Kit-3f2a1c.jpg
 └── P002/
     └── SVC_HP LaserJet CYM Managed Imaging Drum-7a1f3c.jpg
 ```
@@ -218,14 +224,14 @@ frame_save_dir/
 | **Video filename** | Free — any `.mp4` filename works |
 | **Folder not in CSV** | Silently skipped (no error) |
 
-#### Detection (`task: "Detection"`)
+#### `video_type: "multi"` — 프레임당 부품 2개 이상
 
-Multiple parts appear together in a single frame, so there is no per-folder class mapping. CSV is not used. Frames are saved with UUID filenames only — class info is assigned later during bbox annotation.
+CSV 불필요. 파일명은 UUID만 — 클래스 정보는 bbox 어노테이션 단계에서 label 파일에 기록.
 
 ```
 video_dir/
-├── scene_01/        ← folder name is used only as output subfolder
-│   └── clip.mp4     ← multiple parts visible in each frame
+├── scene_01/        ← folder name used as output subfolder only
+│   └── clip.mp4
 └── scene_02/
     └── clip.mp4
 ```
@@ -270,15 +276,17 @@ Videos: 3/10 [frames=847]
 Frame Extraction Completed — 2341 frame(s) saved
 ```
 
-After extraction (Classification mode), prints a class distribution report and saves `class_distribution.csv`.
+- `video_type: "single"`: CSV 매핑 → `{part_name}-{uuid}.jpg`, 완료 후 클래스 분포 리포트 출력
+- `video_type: "multi"`: CSV 불필요 → `{uuid}.jpg`, 클래스 리포트 없음 (bbox 어노테이션 후 확인)
 
 ### augment
 
-**Classification** (`task: "Classification"`): Applies flip, brightness/contrast, rotation (±30°), blur, noise.  
-**Detection** (`task: "Detection"`): Same transforms with ±60° rotation + hue/saturation shift. Bounding boxes are preserved in YOLO format; results where all boxes are lost are discarded.
+**Detection** (`task: "Detection"`, default): Applies flip, brightness/contrast, rotation (±60°), blur, noise, hue/saturation shift. Bounding boxes are preserved in YOLO format; results where all boxes are lost are discarded.
 
-- **MixUp** (`mixup: True`): Blends 2 images with a random alpha (0.6–0.7) and merges their bbox lists. Detection only.
-- **Mosaic** (`mosaic: True`): Combines 4 random images into a 2×2 grid. Bounding boxes are remapped and clipped to the canvas. Detection only.
+- **MixUp** (`mixup: True`): Blends 2 images with a random alpha (0.6–0.7) and merges their bbox lists.
+- **Mosaic** (`mosaic: True`): Combines 4 random images into a 2×2 grid — effectively simulates multi-part scenes from single-part annotated data. Bounding boxes are remapped and clipped to the canvas.
+
+**Classification** (`task: "Classification"`, baseline only): Applies flip, brightness/contrast, rotation (±30°), blur, noise. No bbox handling.
 
 After augmentation, prints a class distribution report. For Detection, the report shows **bbox counts per class_id** (read from label files) instead of image counts per folder, and a drop summary is shown if any augmentations were discarded:
 
@@ -298,9 +306,9 @@ If any class has 0 images, a dedicated warning is shown instead of the ratio:
 
 Behavior depends on `task`:
 
-**Classification** (`task: "Classification"`): reads `yolo_dir/<class>/` subfolders, splits into `train/<class>/`, `val/<class>/`, `test/<class>/` under `yolo_save_dir`. Prints class distribution and split distribution tables; saves `class_distribution.csv` and `split_distribution.csv`.
+**Detection** (`task: "Detection"`, default): reads `yolo_dir/images/` + `yolo_dir/labels/`, splits image+label pairs together into `train/images/`, `train/labels/`, `val/…`, `test/…` under `yolo_save_dir`.
 
-**Detection** (`task: "Detection"`): reads `yolo_dir/images/` + `yolo_dir/labels/`, splits image+label pairs together into `train/images/`, `train/labels/`, `val/…`, `test/…` under `yolo_save_dir`. No class-folder distribution report (classes are in label files).
+**Classification** (`task: "Classification"`, baseline only): reads `yolo_dir/<class>/` subfolders, splits into `train/<class>/`, `val/<class>/`, `test/<class>/` under `yolo_save_dir`. Prints class distribution and split distribution tables; saves `class_distribution.csv` and `split_distribution.csv`.
 
 **Split modes (both tasks):**
 - **`chunk`** (recommended): Groups consecutive frames into chunks of `chunk_size`, shuffles chunks, then assigns whole chunks to splits. Prevents near-duplicate adjacent frames from leaking across train/val/test boundaries.
@@ -318,7 +326,9 @@ lc_source_dir:  "C:/datasets/augmented_v1" # lc reads from here instead
 yolo_save_dir:  "C:/datasets/lc_v1"        # staged subsets written here
 ```
 
-**Classification** (`task: "Classification"`): samples `min(N, available)` images **per class** per stage. Output: `stage_N/<class>/`.
+**Detection** (`task: "Detection"`, default): samples `min(N, available)` image+label **pairs** per stage (N = total images). Output: `stage_N/images/` + `stage_N/labels/`.
+
+**Classification** (`task: "Classification"`, baseline only): samples `min(N, available)` images **per class** per stage. Output: `stage_N/<class>/`.
 
 Example with 3 classes:
 
@@ -328,8 +338,6 @@ Example with 3 classes:
 | `stage_100/` | 100 | ~300 |
 | `stage_150/` | 150 | ~450 |
 | `stage_300/` | 300 | ~900 |
-
-**Detection** (`task: "Detection"`): samples `min(N, available)` image+label **pairs** per stage (N = total images, not per class). Output: `stage_N/images/` + `stage_N/labels/`.
 
 Train the model on each stage and measure validation accuracy to find the point of diminishing returns.
 
