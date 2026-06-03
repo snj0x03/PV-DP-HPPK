@@ -27,10 +27,11 @@ def process_target(
     deduplicate: bool = False,
     hash_size: int = 8,
     hash_threshold: int = 5,
-) -> None:
+) -> int:
     """
     Worker for Classification extraction.
     Saves each frame as {part_name}-{uuid}.jpg for traceability.
+    Returns the number of frames saved.
     """
     video_path, frame_save_dir, part_name = args.values()
 
@@ -44,6 +45,8 @@ def process_target(
     for frame in frames:
         save_image_random_part(frame, frame_save_dir, part_name)
 
+    return len(frames)
+
 
 def process_target_detection(
     args: dict,
@@ -51,11 +54,12 @@ def process_target_detection(
     deduplicate: bool = False,
     hash_size: int = 8,
     hash_threshold: int = 5,
-) -> None:
+) -> int:
     """
     Worker for Detection extraction.
     Saves each frame as {uuid}.jpg — no part name embedded, since a single
     frame may contain multiple parts and class info comes from annotation later.
+    Returns the number of frames saved.
     """
     video_path, frame_save_dir = args.values()
 
@@ -70,6 +74,8 @@ def process_target_detection(
     os.makedirs(frame_save_dir, exist_ok=True)
     for frame in frames:
         save_image_random(frame, frame_save_dir)
+
+    return len(frames)
 
 
 def frame_extraction_pipeline(
@@ -112,11 +118,15 @@ def frame_extraction_pipeline(
         )
 
         print("Extraction Process Initiated")
+        total_frames = 0
         with Pool(processes=cpu_count()) as pool:
-            for _ in tqdm.tqdm(pool.imap_unordered(f, dataset), total=len(dataset), desc="Progress"):
-                pass
+            with tqdm.tqdm(total=len(dataset), desc="Videos") as pbar:
+                for frame_count in pool.imap_unordered(f, dataset):
+                    total_frames += frame_count
+                    pbar.set_postfix(frames=total_frames)
+                    pbar.update(1)
 
-        print("Frame Extraction Completed")
+        print(f"Frame Extraction Completed — {total_frames} frame(s) saved")
         print("Next step: annotate extracted frames with bounding boxes (Roboflow / AnyLabeling)")
 
     else:  # Classification
@@ -132,10 +142,14 @@ def frame_extraction_pipeline(
         )
 
         print("Extraction Process Initiated")
+        total_frames = 0
         with Pool(processes=cpu_count()) as pool:
-            for _ in tqdm.tqdm(pool.imap_unordered(f, dataset), total=len(dataset), desc="Progress"):
-                pass
+            with tqdm.tqdm(total=len(dataset), desc="Videos") as pbar:
+                for frame_count in pool.imap_unordered(f, dataset):
+                    total_frames += frame_count
+                    pbar.set_postfix(frames=total_frames)
+                    pbar.update(1)
 
-        print("Frame Extraction Completed")
+        print(f"Frame Extraction Completed — {total_frames} frame(s) saved")
         counts = count_classes(save_dir)
         imbalance_report(counts, warn_ratio=warn_ratio, save_dir=save_dir)

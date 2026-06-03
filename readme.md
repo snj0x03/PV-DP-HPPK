@@ -71,6 +71,14 @@ cd src
 
 Edit `src/conf/sys_config.yml` with your local paths before running anything (see [Configuration](#configuration-srcconfsys_configyml)).
 
+> **Config validation:** The pipeline checks all required paths and values before starting. If something is missing or invalid, it prints a clear error and exits — no partial runs.
+>
+> ```
+> [CONFIG ERROR] Cannot run 'split' — fix the following in sys_config.yml:
+>   'yolo_dir' is empty — set it in sys_config.yml
+>   'split_ratios' must sum to 1.0, got 1.100
+> ```
+
 ---
 
 ## Quick Start — Full Workflow
@@ -163,6 +171,8 @@ imbalance_ratio_warn: 3.0  # warn if max:min class count ratio exceeds this
 # ── LEARNING CURVE ─────────────────────────────────────
 lc_stages: [50, 100, 150, 300]  # images per class per stage
 lc_seed:   42
+lc_source_dir: ""  # optional: path to augmented output to run lc on augmented data
+                   # leave empty → falls back to yolo_dir automatically
 ```
 
 ### CSV format
@@ -253,7 +263,14 @@ cd src
 ### extract
 
 Scans `video_dir` for subfolders of `.mp4` files, extracts one frame every `frame_rate` seconds, filters near-duplicate frames (average-hash with Hamming distance), and saves to `frame_save_dir/`.  
-After extraction, prints a class distribution report and saves `class_distribution.csv`.
+Progress shows both video count and running frame total:
+
+```
+Videos: 3/10 [frames=847]
+Frame Extraction Completed — 2341 frame(s) saved
+```
+
+After extraction (Classification mode), prints a class distribution report and saves `class_distribution.csv`.
 
 ### augment
 
@@ -263,22 +280,45 @@ After extraction, prints a class distribution report and saves `class_distributi
 - **MixUp** (`mixup: True`): Blends 2 images with a random alpha (0.6–0.7) and merges their bbox lists. Detection only.
 - **Mosaic** (`mosaic: True`): Combines 4 random images into a 2×2 grid. Bounding boxes are remapped and clipped to the canvas. Detection only.
 
-After augmentation, prints a class distribution report.
+After augmentation, prints a class distribution report. For Detection, the report shows **bbox counts per class_id** (read from label files) instead of image counts per folder, and a drop summary is shown if any augmentations were discarded:
+
+```
+Augmentation Completed — 1183/1200 saved (17 dropped, 1.4%: bboxes lost or transform error)
+```
+
+If any class has 0 images, a dedicated warning is shown instead of the ratio:
+
+```
+  part_B                                  : 0  ← EMPTY
+  WARNING: 1 class(es) with 0 images: part_B
+  (Max:Min ratio skipped — remove or populate empty classes before training)
+```
 
 ### split
 
-Reads images from `yolo_dir` (one subfolder per class), splits into `train/`, `val/`, `test/` under `yolo_save_dir`.
+Behavior depends on `task`:
 
-**Split modes:**
+**Classification** (`task: "Classification"`): reads `yolo_dir/<class>/` subfolders, splits into `train/<class>/`, `val/<class>/`, `test/<class>/` under `yolo_save_dir`. Prints class distribution and split distribution tables; saves `class_distribution.csv` and `split_distribution.csv`.
+
+**Detection** (`task: "Detection"`): reads `yolo_dir/images/` + `yolo_dir/labels/`, splits image+label pairs together into `train/images/`, `train/labels/`, `val/…`, `test/…` under `yolo_save_dir`. No class-folder distribution report (classes are in label files).
+
+**Split modes (both tasks):**
 - **`chunk`** (recommended): Groups consecutive frames into chunks of `chunk_size`, shuffles chunks, then assigns whole chunks to splits. Prevents near-duplicate adjacent frames from leaking across train/val/test boundaries.
-- **`random`**: Shuffles individual files per class — simpler but may leak near-duplicates.
-
-Prints class distribution and split distribution tables; saves `class_distribution.csv` and `split_distribution.csv`.
+- **`random`**: Shuffles individual files — simpler but may leak near-duplicates.
 
 ### lc (learning curve)
 
-Creates staged subsets under `yolo_save_dir/stage_50/`, `stage_100/`, `stage_150/`, `stage_300/`.  
-Each stage samples `min(N, available)` images **per class** using a fixed seed.
+Creates staged subsets under `yolo_save_dir/stage_50/`, `stage_100/`, `stage_150/`, `stage_300/`.
+
+**Source directory:** by default reads from `yolo_dir`. To run lc on augmented data without changing `yolo_dir`, set `lc_source_dir` to the augmented output path:
+
+```yaml
+yolo_dir:       "C:/datasets/annotated"    # used by augment / split
+lc_source_dir:  "C:/datasets/augmented_v1" # lc reads from here instead
+yolo_save_dir:  "C:/datasets/lc_v1"        # staged subsets written here
+```
+
+**Classification** (`task: "Classification"`): samples `min(N, available)` images **per class** per stage. Output: `stage_N/<class>/`.
 
 Example with 3 classes:
 
@@ -288,6 +328,8 @@ Example with 3 classes:
 | `stage_100/` | 100 | ~300 |
 | `stage_150/` | 150 | ~450 |
 | `stage_300/` | 300 | ~900 |
+
+**Detection** (`task: "Detection"`): samples `min(N, available)` image+label **pairs** per stage (N = total images, not per class). Output: `stage_N/images/` + `stage_N/labels/`.
 
 Train the model on each stage and measure validation accuracy to find the point of diminishing returns.
 
@@ -394,8 +436,11 @@ yolo_dir/images/ + labels/
          augment_transform × multiplier → save
          mixup_transform (if mixup=True) → save
          mosaic_transform (if mosaic=True) → save
-    ↓  invalid results (all bboxes lost) are discarded
+    ↓  invalid results (all bboxes lost) are discarded silently
+    ↓  drop summary printed: "1183/1200 saved (17 dropped, 1.4%)"
 yolo_save_dir/images/ + labels/
+    ↓  count_classes_detection()  — counts bbox occurrences per class_id from label files
+    ↓  imbalance_report()  — warns if any class has 0 images or ratio exceeds threshold
 ```
 
 ### Classification Augmentation
@@ -409,7 +454,7 @@ yolo_dir/{class_A}/ {class_B}/ ...
 yolo_save_dir/{class_A}/ {class_B}/ ...
 ```
 
-### Chunk Split
+### Split (Classification)
 
 ```
 source/{class}/[frame_0001.jpg ... frame_0300.jpg]  ← sorted by filename
@@ -417,6 +462,20 @@ source/{class}/[frame_0001.jpg ... frame_0300.jpg]  ← sorted by filename
     ↓  shuffle chunks (seed-controlled)
     ↓  assign chunks to train/val/test at ratio boundaries
 save_dir/train/{class}/  val/{class}/  test/{class}/
+    ↓  split_distribution_report()  — prints per-class counts in each split
+```
+
+### Split (Detection)
+
+```
+source/images/ + labels/
+    ↓  collect all image paths (sorted)
+    ↓  chunk-shuffle or random-shuffle
+    ↓  assign to train/val/test at ratio boundaries
+    ↓  copy image + matching label file together
+save_dir/train/images/  train/labels/
+         val/images/    val/labels/
+         test/images/   test/labels/
 ```
 
 Why chunk split? Consecutive video frames are nearly identical. If individual frames are shuffled randomly, the same scene can appear in both train and val — inflating validation accuracy. Chunk split keeps an entire group of similar frames in one split only.

@@ -8,6 +8,7 @@ import random
 import shutil
 
 from utils.stats import count_classes, imbalance_report
+from utils.split import collect_files_detection
 
 
 def learning_curve_pipeline(
@@ -16,6 +17,7 @@ def learning_curve_pipeline(
     stages: list = None,
     seed: int = 42,
     warn_ratio: float = 3.0,
+    task: str = "Classification",
 ) -> None:
     """
     For each stage N in stages, sample N images per class from source_dir and
@@ -36,7 +38,11 @@ def learning_curve_pipeline(
     if stages is None:
         stages = [50, 100, 150, 300]
 
-    # Collect and sort files per class for reproducibility
+    if task == "Detection":
+        _lc_detection(source_dir, save_dir, stages, seed)
+        return
+
+    # Classification: sample N images per class at each stage
     files_by_class = {}
     for class_name in sorted(os.listdir(source_dir)):
         class_path = os.path.join(source_dir, class_name)
@@ -52,7 +58,6 @@ def learning_curve_pipeline(
 
     for stage in stages:
         stage_dir = os.path.join(save_dir, f"stage_{stage}")
-        # Use a fresh RNG instance per stage so stages are independent
         rng = random.Random(seed)
 
         for cls, files in files_by_class.items():
@@ -65,5 +70,36 @@ def learning_curve_pipeline(
         print(f"\n[Learning Curve] stage_{stage}")
         counts = count_classes(stage_dir)
         imbalance_report(counts, warn_ratio=warn_ratio, save_dir=stage_dir)
+
+    print(f"\nLearning curve datasets saved to: {save_dir}")
+
+
+def _lc_detection(source_dir: str, save_dir: str, stages: list, seed: int) -> None:
+    """
+    Detection-mode learning curve: sample N image+label pairs per stage.
+    Output: save_dir/stage_N/images/ + stage_N/labels/
+    """
+    labels_dir = os.path.join(source_dir, "labels")
+    files = collect_files_detection(source_dir)
+    print(f"Detection LC: {len(files)} image(s) found")
+
+    for stage in stages:
+        stage_dir = os.path.join(save_dir, f"stage_{stage}")
+        img_dest  = os.path.join(stage_dir, "images")
+        lbl_dest  = os.path.join(stage_dir, "labels")
+        os.makedirs(img_dest, exist_ok=True)
+        os.makedirs(lbl_dest, exist_ok=True)
+
+        rng     = random.Random(seed)
+        sampled = rng.sample(files, min(stage, len(files)))
+
+        for src_img in sampled:
+            shutil.copy2(src_img, os.path.join(img_dest, os.path.basename(src_img)))
+            stem      = os.path.splitext(os.path.basename(src_img))[0]
+            label_src = os.path.join(labels_dir, stem + ".txt")
+            if os.path.isfile(label_src):
+                shutil.copy2(label_src, os.path.join(lbl_dest, stem + ".txt"))
+
+        print(f"\n[Learning Curve] stage_{stage}: {len(sampled)} image(s)")
 
     print(f"\nLearning curve datasets saved to: {save_dir}")

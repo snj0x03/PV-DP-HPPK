@@ -103,3 +103,69 @@ def save_split(splits: dict, save_dir: str) -> None:
 def build_files_by_class(source_dir: str) -> dict:
     """Public wrapper around _collect_files for use by pipeline modules."""
     return _collect_files(source_dir)
+
+
+# ---------------------------------------------------------------------------
+# Detection-mode helpers (images/ + labels/ flat structure)
+# ---------------------------------------------------------------------------
+
+def collect_files_detection(source_dir: str) -> list:
+    """
+    Return sorted image paths from source_dir/images/.
+    Raises FileNotFoundError if the images/ subfolder is missing.
+    """
+    images_dir = os.path.join(source_dir, "images")
+    if not os.path.isdir(images_dir):
+        raise FileNotFoundError(
+            f"Expected 'images/' subfolder not found in: {source_dir}\n"
+            f"Detection datasets must follow the YOLO layout: images/ + labels/"
+        )
+    return sorted(
+        os.path.join(images_dir, f)
+        for f in os.listdir(images_dir)
+        if f.lower().endswith((".jpg", ".jpeg", ".png"))
+    )
+
+
+def random_split_flat(files: list, ratios: list, seed: int) -> dict:
+    """Shuffle a flat file list and split into train/val/test at ratio boundaries."""
+    rng = random.Random(seed)
+    shuffled = files[:]
+    rng.shuffle(shuffled)
+    train, val, test = _cut_at_ratios(shuffled, ratios)
+    return {"train": train, "val": val, "test": test}
+
+
+def chunk_split_flat(files: list, ratios: list, chunk_size: int, seed: int) -> dict:
+    """Chunk-shuffle a flat file list and split into train/val/test."""
+    rng = random.Random(seed)
+    chunks = [files[i:i + chunk_size] for i in range(0, len(files), chunk_size)]
+    rng.shuffle(chunks)
+    n = len(chunks)
+    train_end = int(n * ratios[0])
+    val_end   = train_end + int(n * ratios[1])
+    return {
+        "train": [f for chunk in chunks[:train_end]        for f in chunk],
+        "val":   [f for chunk in chunks[train_end:val_end] for f in chunk],
+        "test":  [f for chunk in chunks[val_end:]          for f in chunk],
+    }
+
+
+def save_split_detection(splits: dict, save_dir: str, source_dir: str) -> None:
+    """
+    Copy image + label pairs into save_dir/train|val|test/images and .../labels.
+    Labels live at source_dir/labels/<stem>.txt.
+    Images without a matching label file are still copied (may be unannotated frames).
+    """
+    labels_dir = os.path.join(source_dir, "labels")
+    for split_name, files in splits.items():
+        img_dest = os.path.join(save_dir, split_name, "images")
+        lbl_dest = os.path.join(save_dir, split_name, "labels")
+        os.makedirs(img_dest, exist_ok=True)
+        os.makedirs(lbl_dest, exist_ok=True)
+        for src_img in files:
+            shutil.copy2(src_img, os.path.join(img_dest, os.path.basename(src_img)))
+            stem      = os.path.splitext(os.path.basename(src_img))[0]
+            label_src = os.path.join(labels_dir, stem + ".txt")
+            if os.path.isfile(label_src):
+                shutil.copy2(label_src, os.path.join(lbl_dest, stem + ".txt"))

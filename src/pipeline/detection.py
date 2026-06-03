@@ -13,42 +13,53 @@ from utils.helpers import create_save_dir, make_pair_list, make_mosaic_list
 from save.writer import save_file_random
 
 
-def process_target(args: list, copy: bool, multiplier: int, mixup: bool, save_dir: str) -> None:
+def process_target(args: list, copy: bool, multiplier: int, mixup: bool, save_dir: str) -> tuple:
     """
     Worker function for standard augmentation + optional MixUp.
     args: [target, random_partner]  — partner is used only when mixup=True.
 
-    Steps:
-    - If copy=True: save the original image unchanged (copy_transform is a no-op).
-    - For each of multiplier iterations: apply random augment and save.
-    - If mixup=True: blend target with its random partner and save.
+    Returns (saved, attempted) so the caller can report drop statistics.
+    A result is dropped when all bboxes are lost after the transform or an
+    exception occurs (e.g. corrupt image, degenerate bbox coordinates).
     """
     target, random_target = args
+    saved = attempted = 0
 
     if copy:
+        attempted += 1
         result = detection_transform(target, copy_transform)
         if result:
             save_file_random(*result, save_dir)
+            saved += 1
 
     for _ in range(multiplier):
+        attempted += 1
         result = detection_transform(target, augment_transform)
         if result:
             save_file_random(*result, save_dir)
+            saved += 1
 
     if mixup:
+        attempted += 1
         result = mixup_transform(target, random_target)
         if result:
             save_file_random(*result, save_dir)
+            saved += 1
+
+    return saved, attempted
 
 
-def process_mosaic(group: list, save_dir: str) -> None:
+def process_mosaic(group: list, save_dir: str) -> tuple:
     """
     Worker function for Mosaic augmentation.
     group: list of 4 dataset dicts — combined into one 2×2 image.
+    Returns (saved, attempted).
     """
     result = mosaic_transform(group)
     if result:
         save_file_random(*result, save_dir)
+        return 1, 1
+    return 0, 1
 
 
 def detection_pipeline(
@@ -77,16 +88,28 @@ def detection_pipeline(
 
     f = partial(process_target, copy=copy, multiplier=multiplier, mixup=mixup, save_dir=save_dir)
     print("Augmentation Process Initiated")
+    total_saved = total_attempted = 0
     with Pool(processes=cpu_count()) as pool:
-        for _ in tqdm.tqdm(pool.imap_unordered(f, tasks), total=len(tasks), desc="Augment"):
-            pass
+        with tqdm.tqdm(total=len(tasks), desc="Augment") as pbar:
+            for saved, attempted in pool.imap_unordered(f, tasks):
+                total_saved    += saved
+                total_attempted += attempted
+                pbar.update(1)
 
     if mosaic:
-        # Pre-generate groups of 4 for Mosaic before spawning workers
         mosaic_tasks = make_mosaic_list(dataset)
         f_mosaic = partial(process_mosaic, save_dir=save_dir)
         with Pool(processes=cpu_count()) as pool:
-            for _ in tqdm.tqdm(pool.imap_unordered(f_mosaic, mosaic_tasks), total=len(mosaic_tasks), desc="Mosaic"):
-                pass
+            with tqdm.tqdm(total=len(mosaic_tasks), desc="Mosaic") as pbar:
+                for saved, attempted in pool.imap_unordered(f_mosaic, mosaic_tasks):
+                    total_saved    += saved
+                    total_attempted += attempted
+                    pbar.update(1)
 
-    print("Augmentation Completed")
+    dropped = total_attempted - total_saved
+    if dropped:
+        pct = dropped / total_attempted * 100 if total_attempted else 0
+        print(f"Augmentation Completed — {total_saved}/{total_attempted} saved "
+              f"({dropped} dropped, {pct:.1f}%: bboxes lost or transform error)")
+    else:
+        print(f"Augmentation Completed — {total_saved}/{total_attempted} saved")

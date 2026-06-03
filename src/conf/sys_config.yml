@@ -44,6 +44,11 @@ imbalance_ratio_warn: 3.0  # warn if max:min count ratio exceeds this
 
 # LEARNING CURVE
 # Creates staged subsets: stage_50/, stage_100/, ... under yolo_save_dir
+#
+# lc_source_dir: source dataset for lc (optional).
+#   If empty → falls back to yolo_dir.
+#   Set this to yolo_save_dir from the augment step to run lc on augmented data.
 
 lc_stages: [50, 100, 150, 300]
 lc_seed: 42
+lc_source_dir: ""  # leave empty to use yolo_dir; set to augmented output dir if needed
