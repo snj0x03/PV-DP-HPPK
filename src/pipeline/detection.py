@@ -67,7 +67,6 @@ def detection_pipeline(file_dir: str,
         with Pool(processes=cpu_count()) as pool:
             for _ in tqdm.tqdm(pool.imap_unordered(f_aug, dataset), total=len(dataset), desc=f"Iter {i+1}"):
                 pass
-    print()
 
     # Copy 
     if copy_mult: print("Copy Initiated")
@@ -76,7 +75,6 @@ def detection_pipeline(file_dir: str,
         with Pool(processes=cpu_count()) as pool:
             for _ in tqdm.tqdm(pool.imap_unordered(f_copy, dataset), total=len(dataset), desc=f"Iter {i+1}"):
                 pass
-    print()
 
     # Mixup
     if mixup_mult: print("Mixup Augmentation Initiated")
@@ -86,7 +84,6 @@ def detection_pipeline(file_dir: str,
         with Pool(processes=cpu_count()) as pool:
             for _ in tqdm.tqdm(pool.imap_unordered(f_mixup, tasks), total=len(tasks), desc=f"Iter {i+1}"):
                 pass
-    print()
 
     # Mosaic
     if mosaic_mult: print("Mosaic Augmentation Initiated")
@@ -96,7 +93,6 @@ def detection_pipeline(file_dir: str,
         with Pool(processes=cpu_count()) as pool:
             for _ in tqdm.tqdm(pool.imap_unordered(f_mosaic, tasks), total=len(tasks), desc=f"Iter {i+1}"):
                 pass
-    print()
     
 
     # # CopyPaste

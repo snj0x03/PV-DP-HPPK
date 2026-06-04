@@ -9,10 +9,10 @@ frame_rate: 0.8  # seconds per frame (0.25 = 4fps)
 
 # AUGMENTATION 
 
-image_dir: "C:\\Users\\sawna\\Desktop\\P3"
+image_dir: "C:\\Users\\sawna\\Desktop\\P1"
 image_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
 
-task: "Classification" # Detection or Classification
+task: "Detection" # Detection or Classification
 copy_mult: 0
 aug_mult: 2
 mixup_mult: 0
