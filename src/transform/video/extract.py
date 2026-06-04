@@ -14,7 +14,6 @@ def extract_frame(video_path: str, frame_rate: float) -> list:
             break
         if count % interval == 0:
             try:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_list.append(frame)
             except Exception as e:
                 print(e)

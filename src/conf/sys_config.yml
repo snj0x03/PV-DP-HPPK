@@ -9,11 +9,13 @@ frame_rate: 0.8  # seconds per frame (0.25 = 4fps)
 
 # AUGMENTATION 
 
-yolo_dir: "C:\\Users\\sawna\\Desktop\\P3"
-yolo_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
+image_dir: "C:\\Users\\sawna\\Desktop\\P3"
+image_save_dir: "C:\\Users\\sawna\\Desktop\\PO"
 
-task: "Classification" # Detectio or Classification
-copy: False 
-multiplier: 1
-mixup: False
+task: "Classification" # Detection or Classification
+copy_mult: 0
+aug_mult: 2
+mixup_mult: 0
+mosaic_mult: 0
+
 

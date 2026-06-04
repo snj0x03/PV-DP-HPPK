@@ -1,11 +1,16 @@
 import yaml
 import argparse
 import warnings
+import cv2
+import time
 from pipeline.extraction import frame_extraction_pipeline 
 from pipeline.classification import classification_pipeline
 from pipeline.detection import detection_pipeline 
 
 def main():
+    # Optimization
+    cv2.setNumThreads(0)
+
     # Parse Argument
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--option", type=str)
@@ -22,25 +27,42 @@ def main():
     CSV_PATH = CFG["csv_path"]
 
     # Augmentation Config
-    YOLO_DIR = CFG["yolo_dir"]
-    YOLO_SAVE_DIR = CFG["yolo_save_dir"]
-    COPY_ORIGINAL = CFG["copy"]
-    MULTIPLIER = CFG["multiplier"]
-    MIXUP = CFG["mixup"]
+    IMAGE_DIR = CFG["image_dir"]
+    IMAGE_SAVE_DIR = CFG["image_save_dir"]
     TASK = CFG["task"]
+
+    COPY_MULT = CFG["copy_mult"]
+    AUG_MULT = CFG["aug_mult"]
+    MIXUP_MULT = CFG["mixup_mult"]
+    MOSAIC_MULT = CFG["mosaic_mult"]
+    
+    start = time.time()
 
     # run frame extraction on video data
     if args.option == "extract":
-        frame_extraction_pipeline(VIDEO_DIR, FRAME_SAVE_DIR, FRAME_RATE, CSV_PATH)
+        frame_extraction_pipeline(file_dir=VIDEO_DIR,
+                                  save_dir=FRAME_SAVE_DIR, 
+                                  frame_rate=FRAME_RATE, 
+                                  csv_path=CSV_PATH)
 
     # run augmentation on yolo data
     if args.option == "augment" and TASK == "Detection":
-        detection_pipeline(YOLO_DIR, YOLO_SAVE_DIR, COPY_ORIGINAL, MULTIPLIER, MIXUP)
+        detection_pipeline(file_dir=IMAGE_DIR, 
+                           save_dir=IMAGE_SAVE_DIR, 
+                           aug_mult=AUG_MULT,
+                           copy_mult=COPY_MULT, 
+                           mixup_mult=MIXUP_MULT,
+                           mosaic_mult=MOSAIC_MULT)
 
     # run augmentation on classification data
     if args.option == "augment" and TASK == "Classification":
-        classification_pipeline(YOLO_DIR, YOLO_SAVE_DIR, COPY_ORIGINAL, MULTIPLIER)
+        classification_pipeline(file_dir=IMAGE_DIR, 
+                                save_dir=IMAGE_SAVE_DIR,
+                                copy_mult=COPY_MULT,
+                                aug_mult=AUG_MULT)
 
+    end = time.time()
+    print("Processing time:", end - start)
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=UserWarning)

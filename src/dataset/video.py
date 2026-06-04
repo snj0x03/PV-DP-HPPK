@@ -1,7 +1,7 @@
 import os
 from utils.helper import load_part_names
 
-def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict]:
+def video_dataset(file_dir: str, csv_path: str) -> list[dict]:
     part_names = load_part_names(csv_path)
     dataset = []
     for dir_name in os.listdir(file_dir):
@@ -13,8 +13,8 @@ def video_dataset(file_dir: str, save_dir: str, csv_path: str) -> list[dict]:
                     try:
                         target =  {
                             "video_path": os.path.join(new_dir_name, file_name), 
-                            "save_dir": os.path.join(save_dir, part), 
-                            "part_name": part_names[part]
+                            "label": part_names[part],
+                            "part": part
                         }
                         dataset.append(target)
                     except:
