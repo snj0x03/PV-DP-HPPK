@@ -7,15 +7,16 @@
 #   augment  — augment an annotated dataset (Classification or Detection)
 #   split    — split an image dataset into train/val/test
 #   lc       — create staged subsets for learning curve experiments
+#   validate — check Roboflow YOLO export against master Excel parts list
 
 import os
 import warnings
 import argparse
 import yaml
 
-from pipeline.extraction import frame_extraction_pipeline
-from pipeline.classification import classification_pipeline
-from pipeline.detection import detection_pipeline
+from pipeline.p01_extraction import frame_extraction_pipeline
+from pipeline.p04_classification import classification_pipeline
+from pipeline.p03_detection import detection_pipeline
 
 
 def _validate_config(cfg: dict, option: str) -> None:
@@ -24,10 +25,11 @@ def _validate_config(cfg: dict, option: str) -> None:
 
     # Required non-empty paths per option
     required = {
-        "extract": ["video_dir", "frame_save_dir"],
-        "augment": ["yolo_dir", "yolo_save_dir"],
-        "split":   ["yolo_dir", "yolo_save_dir"],
-        "lc":      ["yolo_save_dir"],
+        "extract":  ["video_dir", "frame_save_dir"],
+        "augment":  ["yolo_dir", "yolo_save_dir"],
+        "split":    ["yolo_dir", "yolo_save_dir"],
+        "lc":       ["yolo_save_dir"],
+        "validate": ["validate_dir", "excel_path"],
     }
     if option == "extract" and cfg.get("video_type", "single") == "single":
         required["extract"].append("csv_path")
@@ -39,12 +41,19 @@ def _validate_config(cfg: dict, option: str) -> None:
         if not cfg.get(key, ""):
             errors.append(f"  '{key}' is empty — set it in sys_config.yml")
 
-    # Source directory must exist
+    # Source directory / file must exist
     if option == "lc":
         lc_src = cfg.get("lc_source_dir", "") or cfg.get("yolo_dir", "")
         if lc_src and not os.path.isdir(lc_src):
             src_label = "lc_source_dir" if cfg.get("lc_source_dir", "") else "yolo_dir"
             errors.append(f"  '{src_label}' does not exist: {lc_src}")
+    elif option == "validate":
+        vdir = cfg.get("validate_dir", "")
+        if vdir and not os.path.isdir(vdir):
+            errors.append(f"  'validate_dir' does not exist: {vdir}")
+        xlsx = cfg.get("excel_path", "")
+        if xlsx and not os.path.isfile(xlsx):
+            errors.append(f"  'excel_path' does not exist: {xlsx}")
     else:
         src_key = {"extract": "video_dir", "augment": "yolo_dir", "split": "yolo_dir"}.get(option)
         if src_key:
@@ -104,7 +113,7 @@ def _check_save_dir(save_dir: str, option: str) -> None:
 def main():
     parser = argparse.ArgumentParser(description="PVision Data Pipeline")
     parser.add_argument("-o", "--option", type=str,
-                        choices=["extract", "augment", "split", "lc"],
+                        choices=["extract", "augment", "split", "lc", "validate"],
                         help="Pipeline stage to run")
     args = parser.parse_args()
 
@@ -146,6 +155,10 @@ def main():
     LC_SEED        = CFG.get("lc_seed", 42)
     LC_SOURCE_DIR  = CFG.get("lc_source_dir", "") or YOLO_DIR  # fallback to yolo_dir if empty
 
+    # --- Validate ---
+    VALIDATE_DIR = CFG.get("validate_dir", "")
+    EXCEL_PATH   = CFG.get("excel_path", "")
+
     _validate_config(CFG, args.option)
 
     if args.option == "extract":
@@ -173,7 +186,7 @@ def main():
 
     if args.option == "split":
         _check_save_dir(YOLO_SAVE_DIR, "split")
-        from pipeline.split import split_pipeline
+        from pipeline.p05_split import split_pipeline
         split_pipeline(
             YOLO_DIR, YOLO_SAVE_DIR,
             mode=SPLIT_MODE,
@@ -186,7 +199,7 @@ def main():
 
     if args.option == "lc":
         _check_save_dir(YOLO_SAVE_DIR, "lc")
-        from pipeline.learning_curve import learning_curve_pipeline
+        from pipeline.p06_learning_curve import learning_curve_pipeline
         learning_curve_pipeline(
             LC_SOURCE_DIR, YOLO_SAVE_DIR,
             stages=LC_STAGES,
@@ -194,6 +207,10 @@ def main():
             warn_ratio=IMBALANCE_WARN,
             task=TASK,
         )
+
+    if args.option == "validate":
+        from pipeline.p02_validate import validate_pipeline
+        validate_pipeline(VALIDATE_DIR, EXCEL_PATH)
 
 
 if __name__ == "__main__":

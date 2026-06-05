@@ -2,7 +2,7 @@
 
 A config-driven data preparation pipeline for HP printer part image datasets.  
 The primary task is **Detection** — locating multiple parts within a single frame.  
-Handles four stages: **frame extraction** from raw videos, **image augmentation** on annotated datasets, **dataset splitting** into train/val/test sets, and **learning curve** subset generation.
+Handles five stages: **frame extraction** from raw videos, **image augmentation** on annotated datasets, **dataset splitting** into train/val/test sets, **learning curve** subset generation, and **label validation** against a master Excel parts list.
 
 > **Classification mode** is included for baseline comparison experiments only.  
 > If your scenes contain a single isolated part per image, Classification can serve as a simpler alternative — but the main pipeline is Detection.
@@ -40,11 +40,12 @@ PV-DP-HPPK/
     │   ├── image.py                   # Scans image folders for classification (one subfolder per class)
     │   └── detection.py               # Reads YOLO-format datasets (images/ + labels/)
     ├── pipeline/
-    │   ├── extraction.py              # Video → frame extraction (parallel, with dedup)
-    │   ├── detection.py               # YOLO detection augmentation
-    │   ├── classification.py          # Classification augmentation
-    │   ├── split.py                   # Splits dataset into train/val/test
-    │   └── learning_curve.py          # Creates staged subsets for learning curve experiments
+    │   ├── p01_extraction.py          # Video → frame extraction (parallel, with dedup)
+    │   ├── p02_validate.py            # Validates Roboflow YOLO export against master Excel parts list
+    │   ├── p03_detection.py           # YOLO detection augmentation
+    │   ├── p04_classification.py      # Classification augmentation (baseline only)
+    │   ├── p05_split.py               # Splits dataset into train/val/test
+    │   └── p06_learning_curve.py      # Creates staged subsets for learning curve experiments
     ├── augment/
     │   ├── image/
     │   │   ├── presets.py             # Albumentations transform presets (augment, classify, no-op)
@@ -113,7 +114,15 @@ Frames are saved to `frame_save_dir/`. Near-duplicate frames are automatically f
 
 ### Step 3 — Annotate the extracted frames
 
-Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the frames in YOLO format. Point `yolo_dir` to the annotated dataset before the next step.
+Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the frames in YOLO format. Class names must use the **SVC Part Number** (e.g. `5PN77-67001`) from the master Excel parts list.
+
+### Step 3.5 — Validate the annotated dataset
+
+```bash
+python main.py -o validate
+```
+
+Set `validate_dir` to the Roboflow export root and `excel_path` to the master Excel file. This checks that all class names in `data.yaml` match the Excel SVC Part Numbers, and that all `class_id` values in label files are within the valid range. Fix any issues before proceeding.
 
 ### Step 4 — Augment the annotated dataset
 
@@ -180,6 +189,10 @@ lc_stages: [50, 100, 150, 300]  # images per class per stage
 lc_seed:   42
 lc_source_dir: ""  # optional: path to augmented output to run lc on augmented data
                    # leave empty → falls back to yolo_dir automatically
+
+# ── VALIDATE ───────────────────────────────────────────
+validate_dir: ""  # Roboflow YOLO export root (must contain data.yaml + labels/)
+excel_path:   ""  # path to the master HP parts Excel file
 ```
 
 ### CSV format
@@ -261,10 +274,11 @@ cd src
 
 | Option | Command | Description |
 |--------|---------|-------------|
-| `extract` | `python main.py -o extract` | Extract frames from `.mp4` videos, filter near-duplicates |
-| `augment` | `python main.py -o augment` | Augment annotated images (Classification or Detection) |
-| `split`   | `python main.py -o split`   | Split dataset into train / val / test |
-| `lc`      | `python main.py -o lc`      | Create staged subsets for learning curve experiments |
+| `extract`  | `python main.py -o extract`   | Extract frames from `.mp4` videos, filter near-duplicates |
+| `validate` | `python main.py -o validate`  | Check Roboflow YOLO export against master Excel parts list |
+| `augment`  | `python main.py -o augment`   | Augment annotated images (Classification or Detection) |
+| `split`    | `python main.py -o split`     | Split dataset into train / val / test |
+| `lc`       | `python main.py -o lc`        | Create staged subsets for learning curve experiments |
 
 ### extract
 
@@ -278,6 +292,54 @@ Frame Extraction Completed — 2341 frame(s) saved
 
 - `video_type: "single"`: CSV 매핑 → `{part_name}-{uuid}.jpg`, 완료 후 클래스 분포 리포트 출력
 - `video_type: "multi"`: CSV 불필요 → `{uuid}.jpg`, 클래스 리포트 없음 (bbox 어노테이션 후 확인)
+
+### validate
+
+Validates a Roboflow YOLO export against the master HP parts Excel file. Covers all error cases that can arise during annotation and export.
+
+**Two checks:**
+
+1. `data.yaml` `names` — each SVC Part Number must exist in Excel, and be in the correct Excel row order
+2. label `.txt` files — all `class_id` values must be within `0..(nc-1)`
+
+**Auto-fix (prompted):** If all class names are valid but Roboflow shuffled the order, the pipeline shows the proposed remap and rewrites all label files + `data.yaml`. If any class name is unknown (not in Excel), fix in Roboflow and re-export.
+
+```
+========== Validate ==========
+Excel: 40 SVC Part Number(s) loaded
+
+--- data.yaml  (nc=3) ---
+    0: 5PN77-67003                    ✗  should be class 2
+    1: 5PN77-67001                    ✗  should be class 0
+    2: 5PN77-67002                    ✗  should be class 1
+
+  [FAIL] 3 class(es) in wrong position
+
+--- Label Files  (scanned: 1240) ---
+  [OK] All class_ids within valid range (0–2)
+
+--- Summary ---
+  FAIL  Class names in Excel
+  FAIL  Class order matches Excel
+  PASS  Label file class_ids
+
+  Proposed class_id remap:
+    class 0 (5PN77-67003)  → class 2
+    class 1 (5PN77-67001)  → class 0
+    class 2 (5PN77-67002)  → class 1
+
+  Apply fix? Rewrites label files + data.yaml [y/N]: y
+  ✓ 1240 label file(s) updated
+  ✓ data.yaml rewritten in Excel order
+  → Re-run validate to confirm.
+```
+
+Config keys required:
+
+```yaml
+validate_dir: "C:/datasets/roboflow_export"   # must contain data.yaml + labels/
+excel_path:   "C:/parts/AI Parts Finder_Parts List_Jasper_rev.xlsx"
+```
 
 ### augment
 
@@ -563,7 +625,8 @@ plt.show()
 | `Pillow` | Image loading and saving |
 | `numpy` | Array operations (MixUp, average hash) |
 | `pandas` | Reading the HP parts CSV, saving stats reports |
-| `pyyaml` | Parsing `sys_config.yml` |
+| `pyyaml` | Parsing `sys_config.yml` and Roboflow `data.yaml` |
+| `openpyxl` | Reading the master HP parts Excel file (validate step) |
 | `albumentations` | Augmentation pipeline (flip, rotate, blur, noise, etc.) |
 | `tqdm` | Progress bars |
 

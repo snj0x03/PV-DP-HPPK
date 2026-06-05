@@ -32,6 +32,13 @@ desktop.ini
 .vscode/
 .idea/
 
+# Claude Code
+.claude/
+
+# Reference data (not source code)
+*.xlsx
+*.xls
+
 # Pipeline outputs (large generated datasets — keep out of git)
 Local/
 data/

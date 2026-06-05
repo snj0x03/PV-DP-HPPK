@@ -45,6 +45,14 @@ chunk_size: 10  # consecutive frames per chunk (chunk mode only)
 imbalance_ratio_warn: 3.0  # warn if max:min count ratio exceeds this
 
 
+# VALIDATE
+# Checks data.yaml class names against Excel SVC Part Numbers,
+# and scans label .txt files for out-of-range class_ids.
+
+validate_dir: ""    # Roboflow YOLO export root (must contain data.yaml + labels/)
+excel_path: ""      # path to the master parts Excel file
+
+
 # LEARNING CURVE
 # Creates staged subsets: stage_50/, stage_100/, ... under yolo_save_dir
 #
