@@ -58,7 +58,6 @@ def detection_pipeline(file_dir: str,
 
     # Ingest 
     dataset = yolo_dataset(file_dir)
-    print("Yolo Dataset Created")
 
     # Augmentation
     if aug_mult: print("Augmentation Initiated")

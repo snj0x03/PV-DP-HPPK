@@ -17,8 +17,8 @@ def detection_transform(target: dict, transform: A.Compose) -> tuple | None:
 
 def mixup_transform(target: dict, ex_target: dict) -> tuple | None:
     try:
+        # Rotate
         target = geometric(image=target["image"], bboxes=target["bboxes"], labels=target["labels"])
-        ex_target = geometric(image=ex_target["image"], bboxes=ex_target["bboxes"], labels=ex_target["labels"])
 
         result = mixup(image = target["image"],
                     bboxes = target["bboxes"],

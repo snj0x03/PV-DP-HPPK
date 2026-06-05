@@ -5,13 +5,18 @@ augment_transform = A.Compose(
         A.Affine(
             scale=(0.8, 1.2),
             rotate=(-60, 60),
-            translate_px=(30, 30),
             shear={"x": (-10, 10), "y": (-5, 5)},
-            p=1.0
+            fit_output=True,
+            rotate_method="ellipse",
+            p=1.0,
         ),
+        A.BBoxSafeRandomCrop(p=1.0),
         A.SquareSymmetry(p=1.0),
         A.RandomBrightnessContrast(p=0.4),
-        A.GaussNoise(p=0.4),
+        A.OneOf([
+            A.GaussianBlur(p=1.0),
+            A.MedianBlur(p=1.0),
+        ], p=0.4),
     ],
     bbox_params=A.BboxParams(
         coord_format="yolo",
@@ -22,14 +27,7 @@ augment_transform = A.Compose(
 
 geometric = A.Compose(
     [
-        A.Affine(
-            scale=(0.8, 1.2),
-            rotate=(-60, 60),
-            translate_px=(30, 30),
-            shear={"x": (-10, 10), "y": (-5, 5)},
-            p=1.0
-        ),
-        A.SquareSymmetry(p=1.0),
+        A.Rotate(angle_range=(-30, 30)),
     ],
     bbox_params=A.BboxParams(
         coord_format="yolo",
@@ -58,12 +56,12 @@ empty_transform = A.Compose([
 mosaic = A.Compose(
     [
         A.Mosaic(
-            grid_yx=(2, 2),
-            target_size=(640, 640),
-            cell_shape=(320, 320),
+            grid_yx=(3, 2),
+            target_size=(1200, 800),
+            cell_shape=(480, 480),
             p = 1.0
         ),
-        A.SquareSymmetry(p=0.5),
+        A.SquareSymmetry(p=1.0),
     ],
     bbox_params=A.BboxParams(
         coord_format="yolo", 
