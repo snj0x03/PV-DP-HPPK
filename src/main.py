@@ -20,6 +20,10 @@ def main():
     with open("./conf/sys_config.yml", "r") as f:
         CFG = yaml.safe_load(f)
 
+    
+    # Mode
+    MODE = CFG["mode"]
+
     # Extraction Config
     VIDEO_DIR = CFG["video_dir"]
     FRAME_SAVE_DIR = CFG["frame_save_dir"]
@@ -42,6 +46,7 @@ def main():
     if args.option == "extract":
         frame_extraction_pipeline(file_dir=VIDEO_DIR,
                                   save_dir=FRAME_SAVE_DIR, 
+                                  mode = MODE,
                                   frame_rate=FRAME_RATE, 
                                   csv_path=CSV_PATH)
 
@@ -49,6 +54,7 @@ def main():
     if args.option == "augment" and TASK == "Detection":
         detection_pipeline(file_dir=IMAGE_DIR, 
                            save_dir=IMAGE_SAVE_DIR, 
+                           mode = MODE,
                            aug_mult=AUG_MULT,
                            copy_mult=COPY_MULT, 
                            mixup_mult=MIXUP_MULT,
@@ -58,6 +64,7 @@ def main():
     if args.option == "augment" and TASK == "Classification":
         classification_pipeline(file_dir=IMAGE_DIR, 
                                 save_dir=IMAGE_SAVE_DIR,
+                                mode = MODE,
                                 copy_mult=COPY_MULT,
                                 aug_mult=AUG_MULT)
 

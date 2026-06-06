@@ -27,10 +27,11 @@ def process_copy(args: dict, save_dir: str) -> None:
 
 def classification_pipeline(file_dir: str,
                             save_dir: str,
+                            mode: str,
                             aug_mult: int,
                             copy_mult: int) -> None:
 
-    create_save_dir(file_dir, save_dir)
+    create_save_dir(file_dir, save_dir, mode)
     print("Save Directory Created")
 
     # Ingest

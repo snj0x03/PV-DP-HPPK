@@ -26,7 +26,7 @@ PV-DP-HPPK/
     │   ├── image/
     │   │   ├── default.py       # Albumentations transform presets
     │   │   ├── augment.py       # Applies transforms, returns result tuples
-    │   │   └── custom.py        # Custom MixUp implementation
+    │   │   └── custom.py        # Custom Augmentation implementation (e.g. MixUp)
     │   └── video/
     │       └── extract.py       # OpenCV frame extraction logic
     ├── load/
@@ -63,19 +63,40 @@ Open `src/conf/sys_config.yml` and fill in the paths and options for your enviro
 All settings are in `src/conf/sys_config.yml`:
 
 ```yaml
+# --- Mode ---
+mode:           ""    # "strict" or "normal"
+                      # strict mode will raise error if output folder already exists
+                      # normal mode will not raise error
+
 # --- Frame Extraction ---
 video_dir:      ""    # Root folder containing subfolders of .mp4 videos (one subfolder per part)
 frame_save_dir: ""    # Where extracted frames will be saved
 csv_path:       ""    # Path to a CSV file mapping folder names to HP part names
-frame_rate:     0.8   # Seconds between extracted frames (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
+frame_rate:     0   # Seconds between extracted frames (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
 
 # --- Augmentation ---
 yolo_dir:       ""    # Input: annotated YOLO dataset directory (must contain images/ and labels/)
 yolo_save_dir:  ""    # Output: where augmented dataset will be saved
-task:           "Classification"   # "Detection" or "Classification"
-copy:           True  # If True, each original image is also copied to the output unchanged
-multiplier:     3     # Number of augmented variants to generate per original image
-mixup:          True  # If True, apply MixUp blending between random image pairs (Detection only)
+task:           ""    # "Detection" or "Classification"
+aug_mult:       0     # Number of time an albumentations pipeline is applied
+copy_mult:      0     # Number of time images and labels are copied 
+mixup_mult:     0     # Number of time MixUp transform is applied 
+mosaic_mult:    0     # Number of time Mosaic transform is applied 
+```
+
+### Expected input structure (for video frame extraction)
+
+```
+file_dir/
+├── Part01/
+│   ├── vid001.mp4
+│   └── vid002.mp4
+├── Part02/
+│   ├── vid001.mp4
+│   ├── vid002.mp4   
+│   └── vid003.mp4
+└── meta.csv
+
 ```
 
 ### CSV format (for frame extraction)
@@ -89,10 +110,26 @@ P002,SVC_HP LaserJet CYM Managed Imaging Drum
 ...
 ```
 
-### Expected input structure (for augmentation)
+### Expected input structure (for classification augmentation)
 
 ```
-yolo_dir/
+file_dir/
+├── Part01/
+│   ├── img001.jpg
+│   └── img002.jpg
+├── Part02/
+│   ├── img001.jpg
+│   ├── img002.jpg   
+│   └── img003.jpg
+└── Part03/
+    ├── img001.jpg   
+    └── img002.jpg
+```
+
+### Expected input structure (for object detection augmentation)
+
+```
+file_dir/
 ├── images/
 │   ├── img001.jpg
 │   └── img002.jpg
@@ -184,11 +221,5 @@ Same as Detection but without bounding box handling:
 | `numpy` | Array operations for MixUp augmentation |
 | `pandas` | Reading the HP parts name CSV file |
 | `pyyaml` | Parsing `sys_config.yml` |
-| `albumentations` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
+| `albumentationsx` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
 | `tqdm` | Progress bar for pipeline processing |
-
-Install all at once:
-
-```bash
-pip install -r requirements.txt
-```

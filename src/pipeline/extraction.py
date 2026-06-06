@@ -17,9 +17,13 @@ def process_target(args: dict, frame_rate: float, save_dir: str) -> None:
 
     return 
 
-def frame_extraction_pipeline(file_dir: str, save_dir: str, frame_rate: float, csv_path: str) -> None:
+def frame_extraction_pipeline(file_dir: str, 
+                              save_dir: str, 
+                              mode: str,
+                              frame_rate: float, 
+                              csv_path: str) -> None:
 
-    create_save_dir(file_dir, save_dir)
+    create_save_dir(file_dir, save_dir, mode)
     print("Save Directory Created")
    
     # Ingest 

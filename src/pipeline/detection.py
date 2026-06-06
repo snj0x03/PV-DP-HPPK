@@ -48,12 +48,13 @@ def process_mosaic(args: list, save_dir: str) -> None:
 # Pipeline
 def detection_pipeline(file_dir: str, 
                        save_dir: str, 
+                       mode: str,
                        aug_mult: int, 
                        copy_mult: bool, 
                        mixup_mult: bool,
                        mosaic_mult: bool) -> None:
 
-    create_save_dir(file_dir, save_dir)
+    create_save_dir(file_dir, save_dir, mode)
     print("Save Directory Created")
 
     # Ingest 

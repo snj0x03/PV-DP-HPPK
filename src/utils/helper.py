@@ -1,12 +1,18 @@
 import os
-import random
 import pandas as pd
 import numpy as np
 
-def create_save_dir(file_dir: str, save_dir: str) -> None:
+def create_save_dir(file_dir: str, save_dir: str, mode: str) -> None:
+    if mode == "normal":
+        f_exists = True
+    if mode == "strict":
+        f_exists = False
+    if mode != "normal" or mode != "strict":
+        raise ValueError("The mode needs to be either 'normal' or 'strict'")
+
     for dirname in os.listdir(file_dir):
         if os.path.isdir(os.path.join(file_dir, dirname)):
-            os.makedirs(os.path.join(save_dir, dirname))
+            os.makedirs(os.path.join(save_dir, dirname), exist_ok=f_exists)
 
 def load_part_names(csv_path: str) -> dict:
     df = pd.read_csv(csv_path)
