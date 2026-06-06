@@ -47,6 +47,7 @@ copy_transform = A.Compose([
 
 classify_transform = A.Compose([
     A.HorizontalFlip(p=0.6),
+    A.ColorJitter(p=1.0)
 ])
 
 empty_transform = A.Compose([

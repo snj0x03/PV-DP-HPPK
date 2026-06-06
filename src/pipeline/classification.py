@@ -10,7 +10,7 @@ from load.loader import save_image_random
 def process_augment(args: dict, save_dir: str) -> None:
 
     target = args
-    result = classification_transform(target, empty_transform) # Transform 
+    result = classification_transform(target, classify_transform) # Transform 
     if result: 
         image, label = result
         save_image_random(image, save_dir, label) # Load
@@ -19,7 +19,7 @@ def process_augment(args: dict, save_dir: str) -> None:
 def process_copy(args: dict, save_dir: str) -> None:
 
     target = args
-    result = classification_transform(target, classify_transform) # Transform
+    result = classification_transform(target, empty_transform) # Transform
     if result:
         image, label = result
         save_image_random(image, save_dir, label) 
