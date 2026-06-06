@@ -193,9 +193,10 @@ python main.py --option augment
 1. Reads all images and their YOLO label files from `yolo_dir`.
 2. Randomly pairs each image with another image (for MixUp).
 3. For each image:
-   - Optionally copies the original unchanged (`copy: True`).
-   - Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
+   - Optionally copies the original unchanged (`copy_mult`).
+   - Generates `aug_mult` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
    - Optionally applies **MixUp**: blends two images together with a random alpha (0.6–0.7) and merges their bounding box lists.
+   - Optionally appleis **Mosaic**: combines multiple images toegther in grids
 4. Saves output images and updated `.txt` label files with UUID filenames.
 5. Bounding boxes are validated — any result where all boxes are lost (e.g. cropped out) is discarded.
 6. Runs in **parallel** using Python `multiprocessing`.
@@ -205,7 +206,7 @@ python main.py --option augment
 Same as Detection but without bounding box handling:
 1. Reads images from subdirectory-per-class folder structure.
 2. Optionally copies the original.
-3. Generates `multiplier` augmented variants using: horizontal flip, brightness/contrast, rotation (±30°), Gaussian blur, Gaussian noise.
+3. Generates `aug_mult` augmented variants using: horizontal flip, brightness/contrast, rotation (±30°), Gaussian blur, Gaussian noise.
 4. Saves output images with UUID filenames into matching class subdirectories.
 5. Runs in **parallel** using Python `multiprocessing`.
 
@@ -215,7 +216,6 @@ Same as Detection but without bounding box handling:
 | Package | Purpose |
 |---|---|
 | `opencv-python` | Video reading and frame extraction |
-| `Pillow` | Image loading and saving |
 | `numpy` | Array operations for MixUp augmentation |
 | `pandas` | Reading the HP parts name CSV file |
 | `pyyaml` | Parsing `sys_config.yml` |
