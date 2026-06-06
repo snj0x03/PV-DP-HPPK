@@ -3,7 +3,6 @@
 A data preparation pipeline for HP printer part image datasets.  
 It handles two independent stages: **frame extraction** from raw `.mp4` videos, and **image augmentation** on annotated YOLO-format datasets.
 
----
 
 ## Project Structure
 
@@ -35,12 +34,11 @@ PV-DP-HPPK/
         └── helper.py            # Directory creation, CSV loading, pair generation
 ```
 
----
 
 ## Setup
 
 > [!WARNING]  
-> Albumentationsx requires Python >= 3.14
+> albumentationsx requires Python >= 3.14
 
 ### 1. Clone the repository
 
@@ -59,7 +57,6 @@ pip install -r requirements.txt
 
 Open `src/conf/sys_config.yml` and fill in the paths and options for your environment before running anything.
 
----
 
 ## Configuration
 
@@ -75,7 +72,8 @@ mode:           ""    # "strict" or "normal"
 video_dir:      ""    # Root folder containing subfolders of .mp4 videos (one subfolder per part)
 frame_save_dir: ""    # Where extracted frames will be saved
 csv_path:       ""    # Path to a CSV file mapping folder names to HP part names
-frame_rate:     0   # Seconds between extracted frames (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
+frame_rate:     0     # Seconds between extracted frames 
+                      # (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
 
 # --- Augmentation ---
 yolo_dir:       ""    # Input: annotated YOLO dataset directory (must contain images/ and labels/)
@@ -99,10 +97,9 @@ file_dir/
 │   ├── vid002.mp4   
 │   └── vid003.mp4
 └── meta.csv
-
 ```
 
-### CSV format (for frame extraction)
+## CSV format (for frame extraction)
 
 The CSV file maps raw video subfolder names to readable HP part names.  
 The first column should be the folder name, the second column the part name:
@@ -141,7 +138,6 @@ file_dir/
     └── img002.txt
 ```
 
----
 
 ## Usage
 
@@ -180,7 +176,6 @@ python main.py --option augment
 # Requires: task: "Classification" in sys_config.yml
 ```
 
----
 
 ## Pipeline Details
 
@@ -213,7 +208,6 @@ Same as Detection but without bounding box handling:
 4. Saves output images with UUID filenames into matching class subdirectories.
 5. Runs in **parallel** using Python `multiprocessing`.
 
----
 
 ## Dependencies
 
