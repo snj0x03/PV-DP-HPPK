@@ -99,14 +99,15 @@ file_dir/
 └── meta.csv
 ```
 
-## CSV format (for frame extraction)
+#### CSV format (for frame extraction)
 
 The CSV file maps raw video subfolder names to readable HP part names.  
 The first column should be the folder name, the second column the part name:
 
 ```
-P001,SVC_HP LaserJet Fuser 220V Kit
-P002,SVC_HP LaserJet CYM Managed Imaging Drum
+Folder,Part
+P001,5PN77-67001
+P002,W9078-67001
 ...
 ```
 
