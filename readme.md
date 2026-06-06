@@ -39,6 +39,9 @@ PV-DP-HPPK/
 
 ## Setup
 
+> [!WARNING]  
+> Albumentationsx requires Python >= 3.14
+
 ### 1. Clone the repository
 
 ```bash

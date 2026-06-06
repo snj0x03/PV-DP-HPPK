@@ -3,11 +3,12 @@ import pandas as pd
 import numpy as np
 
 def create_save_dir(file_dir: str, save_dir: str, mode: str) -> None:
+
     if mode == "normal":
         f_exists = True
-    if mode == "strict":
+    elif mode == "strict":
         f_exists = False
-    if mode != "normal" or mode != "strict":
+    else:
         raise ValueError("The mode needs to be either 'normal' or 'strict'")
 
     for dirname in os.listdir(file_dir):
