@@ -26,7 +26,7 @@ def frame_extraction_pipeline(file_dir: str,
     create_save_dir(file_dir, save_dir, mode)
     print("Save Directory Created")
    
-    # Ingest 
+    # Dataset 
     dataset = video_dataset(file_dir, csv_path)
     print("Video Dataset Created")
 

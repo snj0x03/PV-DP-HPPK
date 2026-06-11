@@ -1,7 +1,7 @@
 import os
-import cv2
 
 def image_dataset(file_dir: str) -> list[dict]:
+    # List of [image_path, class]
     dataset = []
     for dir_name in os.listdir(file_dir):
         part = dir_name
@@ -10,12 +10,10 @@ def image_dataset(file_dir: str) -> list[dict]:
             for file_name in os.listdir(new_dir_name):
                 if file_name.endswith((".jpg")):
                     try:
-                        image_path = os.path.join(new_dir_name, file_name)
-                        image = cv2.imread(image_path)
-                        target = {
-                            "image": image,
-                            "label": part
-                        }
+                        target = [
+                            file_name,
+                            part
+                        ]
                         dataset.append(target)
                     except:
                         pass

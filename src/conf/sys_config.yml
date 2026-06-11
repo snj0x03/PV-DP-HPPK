@@ -1,25 +1,25 @@
 # MODE 
 
-mode:            "" # strict or normal
+mode:            "normal" # strict or normal
 
 # EXTRACTION
 
-video_dir:       ""
-frame_save_dir:  "" 
-csv_path:        ""
+video_dir:       "C:\\Users\\sawna\\Desktop\\demo\\P2"
+frame_save_dir:  "C:\\Users\\sawna\\Desktop\\demo\\PO" 
+csv_path:        "C:\\Users\\sawna\\Desktop\\demo\\P2\\ttt.csv"
 
-frame_rate:      0  # seconds per frame (0.25 = 4fps)
+frame_rate:      0.25  # seconds per frame (0.25 = 4fps)
 
 
 # AUGMENTATION 
 
-image_dir:       ""
-image_save_dir:  ""
+image_dir:       "C:\\Users\\sawna\\Desktop\\demo\\P3"
+image_save_dir:  "C:\\Users\\sawna\\Desktop\\demo\\PO"
 
-task:            "" # Detection or Classification
-copy_mult:       0
-aug_mult:        0
-mixup_mult:      0
-mosaic_mult:     0
+task:            "Classification" # Detection or Classification
+copy_mult:       1
+aug_mult:        1
+mixup_mult:      1
+mosaic_mult:     1
 
 

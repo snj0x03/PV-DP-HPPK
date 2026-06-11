@@ -1,8 +1,14 @@
 import albumentations as A
+import numpy as np
 from transform.image.custom import mixup 
 from transform.image.default import geometric 
 
+
+# Object Detection Transoforms
+
 def detection_transform(target: dict, transform: A.Compose) -> tuple | None:
+    if not target:
+        return 
     try:
         result = transform(image=target["image"], bboxes=target["bboxes"], labels=target["labels"])
         image = result["image"]
@@ -36,17 +42,6 @@ def mixup_transform(target: dict, ex_target: dict) -> tuple | None:
         pass
 
 
-def classification_transform(target: dict, transform: A.Compose) -> tuple | None:
-    try:
-        result = transform(image=target["image"])
-        image = result["image"]
-        label = target["label"]
-
-        return image, label 
-
-    except:
-        pass
-
 def mosaic_transform(target: dict, transform: A.Compose, metadata: list) -> tuple | None:
     try:
         result = transform(image = target["image"],
@@ -61,18 +56,13 @@ def mosaic_transform(target: dict, transform: A.Compose, metadata: list) -> tupl
     except:
         pass
 
-def copypaste_transform(target: dict, transform: A.Compose, metadata: list) -> tuple | None:
-    try:
-        result = transform(image = target["image"],
-                           bboxes = target["bboxes"],
-                           labels = target["labels"],
-                           copy_paste_metadata = metadata)
-        image = result["image"]
-        bboxes = result["bboxes"]
-        labels = result["labels"]
-        
-        return image, labels, bboxes
 
+# Classification Transforms
+
+def classification_transform(target: np.ndarray | None, transform: A.Compose) -> np.ndarray | None:
+    try:
+        result = transform(image=target)
+        image = result["image"]
+        return image
     except:
         pass
-

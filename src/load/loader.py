@@ -4,16 +4,12 @@ import uuid
 import numpy as np
 
 
-def save_image(image: np.ndarray, save_dir: str, sub_dir: str, file_name: str) -> None:
-    try:
-        if sub_dir:
-            save_dir = os.path.join(save_dir, sub_dir)
-
-        cv2.imwrite(os.path.join(save_dir, file_name), image)
-        
-        # Image.fromarray(image).save(os.path.join(save_dir, file_name))
-    except:
-        pass
+def save_image(image: np.ndarray | None, save_dir: str, sub_dir: str, file_name: str) -> None:
+    if image is None:
+        return
+    if sub_dir:
+        save_dir = os.path.join(save_dir, sub_dir)
+    cv2.imwrite(os.path.join(save_dir, file_name), image)
 
 
 def save_label(labels: list, bboxes: list, save_dir: str, sub_dir: str, file_name: str) -> None:
@@ -37,7 +33,7 @@ def save_file_random(image: np.ndarray, labels: list, bboxes: list, save_dir: st
         save_label(labels, bboxes, save_dir, "labels", text_name)
 
 
-def save_image_random(image: np.ndarray, save_dir: str, sub_dir: str) -> None:
+def save_image_random(image: np.ndarray | None, save_dir: str, sub_dir: str) -> None:
     name = uuid.uuid1()
     file_name = f"{name}.jpg"
     save_image(image, save_dir, sub_dir, file_name)

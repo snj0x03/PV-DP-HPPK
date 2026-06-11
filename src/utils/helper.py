@@ -21,49 +21,26 @@ def load_part_names(csv_path: str) -> dict:
     part_names = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
     return part_names 
 
-def create_mosaic_metadata(dataset: list, indexes: list):
-    metadata = [
-        {
-            "image": dataset[i]["image"],
-            "bboxes": dataset[i]["bboxes"],
-            "bbox_labels": {"labels": dataset[i]["labels"]}
-        }
-        for i in indexes
-    ]
-    return metadata
+def create_tasks(dataset: list, n_perm: int):
 
-        
-def create_mixup_tasks(dataset: list):
     n = len(dataset)
-    p1 = np.random.permutation(n)
-    p2 = np.random.permutation(n)
-    task = [ 
-        [dataset[i1], dataset[i2]]
-        for i1, i2 in zip(p1, p2)
-    ]
-    return task
+    p = []
+    for _ in range(n_perm-1):
+        p.append(np.random.permutation(n))
 
+    tasks = []
+    for i in range(n):
+        temp = [dataset[i]]
+        for j in range(n_perm-1):
+            temp.append(dataset[p[j][i]])
+        tasks.append(temp)
+    return tasks
 
-def create_mosaic_tasks(dataset: list):
-    n = len(dataset)
-    p1 = np.random.permutation(n)
-    p2 = np.random.permutation(n)
-    p3 = np.random.permutation(n)
-    p4 = np.random.permutation(n)
-    task = [
-        [dataset[i1], create_mosaic_metadata(dataset, [i2, i3, i4])]
-        for i1, i2, i3, i4 in zip(p1, p2, p3, p4)
-    ]
-    return task
-
-
-# def create_copypaste_metadata(dataset: list):
-#     metadata = [
-#         {
-#             "image": img["image"],
-#             "bbox": img["bboxes"][0],
-#             "bbox_labels": {"labels": img["labels"][0]}
-#         }
-#         for img in dataset
-#     ]
-#     return metadata
+# CopyAndPaste Metadata
+# metadata = [
+#     {
+#         "image": img["image"],
+#         "bbox": img["bboxes"][index],
+#         "bbox_labels": {"labels": img["labels"][index]}
+#     }
+# ]
