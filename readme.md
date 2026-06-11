@@ -17,6 +17,8 @@ PV-DP-HPPK/
     │   ├── image.py             # Scans image folders for classification data
     │   ├── video.py             # Scans video folders, maps folder names to HP part names
     │   └── yolo.py              # Reads YOLO-format images and label .txt files
+    ├── extract/
+    │   └── extractor.py         # Extract target images from source location
     ├── pipeline/
     │   ├── extraction.py        # Orchestrates video → frame extraction
     │   ├── detection.py         # Orchestrates YOLO detection augmentation
