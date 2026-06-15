@@ -19,6 +19,7 @@ def process_augment(args: dict,
     file_name = args[0]
     label = args[1]
    
+    transform.set_random_seed(None)
     target = extract_image(file_dir, label, file_name) # Extract
     image = classification_transform(target, transform) # Transform 
     save_image_random(image, save_dir, label) # Load

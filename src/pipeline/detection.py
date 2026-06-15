@@ -35,6 +35,7 @@ def process_augment(args: dict,
 
     if target: 
         # Transform
+        transform.set_random_seed(None)
         result = detection_transform(target=target, 
                                      transform=transform,
                                      mixup_metadata=mixup_metadata,
