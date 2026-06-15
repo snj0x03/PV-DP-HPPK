@@ -21,21 +21,37 @@ def load_part_names(csv_path: str) -> dict:
     part_names = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
     return part_names 
 
-def create_tasks(dataset: list, n_perm: int):
+def create_tasks(dataset: list, mixup_allocate: int, mosaic_allocate: int):
 
     n = len(dataset)
-    p = []
-    for _ in range(n_perm-1):
-        p.append(np.random.permutation(n))
+    p_mixup = []
+    p_mosaic = []
+
+
+    if mixup_allocate == 1:
+        p_mixup.append(np.random.permutation(n))
+    for _ in range(mosaic_allocate):
+        p_mosaic.append(np.random.permutation(n))
 
     tasks = []
     for i in range(n):
-        temp = [dataset[i]]
-        for j in range(n_perm-1):
-            temp.append(dataset[p[j][i]])
-        tasks.append(temp)
+        temp_mixup = []
+        temp_mosaic = []
+
+        for j in range(mixup_allocate):
+            temp_mixup.append(dataset[p_mixup[j][i]])
+        for j in range(mosaic_allocate):
+            temp_mosaic.append(dataset[p_mosaic[j][i]])
+
+        task = {
+            "album": dataset[i],
+            "mixup": temp_mixup,
+            "mosaic": temp_mosaic
+        }
+        tasks.append(task)
     return tasks
 
+    
 # CopyAndPaste Metadata
 # metadata = [
 #     {

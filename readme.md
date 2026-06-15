@@ -12,24 +12,24 @@ PV-DP-HPPK/
 └── src/
     ├── main.py                  # Entry point — parse args, load config, run pipeline
     ├── conf/
-    │   └── sys_config.yml       # All runtime configuration lives here
+    │   ├── ext_config.yml       # Config for frame extraction
+    │   ├── det_config.py        # Config for multi-step augmentation (detection)
+    │   └── cls_config.py        # Config for multi-step augmentation (classification)
     ├── dataset/
     │   ├── image.py             # Scans image folders for classification data
     │   ├── video.py             # Scans video folders, maps folder names to HP part names
     │   └── yolo.py              # Reads YOLO-format images and label .txt files
     ├── extract/
     │   └── extractor.py         # Extract target images from source location
+    ├── flow/
+    │   └── orchestrate.py       # Orchestrate multi-step augmentation
     ├── pipeline/
-    │   ├── extraction.py        # Orchestrates video → frame extraction
-    │   ├── detection.py         # Orchestrates YOLO detection augmentation
-    │   └── classification.py    # Orchestrates classification augmentation
+    │   ├── extraction.py        # Frame Extraction ETL using multiprocessing
+    │   ├── detection.py         # Detection Augmentation ETL using multiprocessing
+    │   └── classification.py    # Classification Augmentation ETL using multiprocessing
     ├── transform/
-    │   ├── image/
-    │   │   ├── default.py       # Albumentations transform presets
-    │   │   ├── augment.py       # Applies transforms, returns result tuples
-    │   │   └── custom.py        # Custom Augmentation implementation (e.g. MixUp)
-    │   └── video/
-    │       └── extract.py       # OpenCV frame extraction logic
+    │   ├── augment.py           # Applies transforms, returns result tuples
+    │   └── custom.py            # Custom Augmentation implementation (e.g. MixUp)
     ├── load/
     │   └── loader.py            # Saves output images and YOLO label files
     └── utils/
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 ### 3. Edit the config file
 
-Open `src/conf/sys_config.yml` and fill in the paths and options for your environment before running anything.
+Open `src/conf/` and fill in the paths and options for your environment before running anything.
 
 
 ## Configuration
@@ -76,16 +76,89 @@ frame_save_dir: ""    # Where extracted frames will be saved
 csv_path:       ""    # Path to a CSV file mapping folder names to HP part names
 frame_rate:     0     # Seconds between extracted frames 
                       # (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
-
-# --- Augmentation ---
-yolo_dir:       ""    # Input: annotated YOLO dataset directory (must contain images/ and labels/)
-yolo_save_dir:  ""    # Output: where augmented dataset will be saved
-task:           ""    # "Detection" or "Classification"
-aug_mult:       0     # Number of time an albumentations pipeline is applied
-copy_mult:      0     # Number of time images and labels are copied 
-mixup_mult:     0     # Number of time MixUp transform is applied 
-mosaic_mult:    0     # Number of time Mosaic transform is applied 
 ```
+
+All settings for classification in `src/conf/cls_config.py`:
+
+```python
+
+MODE = ""                     # "strict or "normal"
+
+AUG_LIST = [
+    {
+        "source":             # Source directory
+        "destination":        # Output directory
+        "multiplier":         # Number of time augmentation is applied
+        "transform":          # Albumentations Compose pipeline
+    },
+    ...
+]
+
+```
+
+All settings for classification in `src/conf/det_config.py`:
+
+```python
+
+MODE = ""                     # "strict or "normal"
+
+AUG_LIST = [
+    {
+        "source":             # Source directory
+        "destination":        # Output directory
+        "mosaic_allocate":    # Number of extra images supplied for each mosaic augmentation
+        "multiplier":         # Number of time augmentation is applied
+        "transform":          # Albumentations Compose pipeline
+    },
+    ...
+]
+
+```
+
+Example object detection multi-step augmentation:
+
+```python
+MODE = "normal"
+
+AUG_LIST = [
+    {
+        "source": "C:\\Users\\name\\Desktop\\demo\\P1",
+        "destination": "C:\\Users\\name\\Desktop\\demo\\PO",
+        "multiplier": 2,
+        "mosaic_allocate": 0,
+        "transform": A.Compose([
+            A.Mosaic(
+                grid_yx=(2, 2),
+                target_size=(640, 640),
+                cell_shape=(320, 320),
+                fit_mode="contain",
+                p=1.0
+            )
+        ],
+        bbox_params=A.BboxParams(
+            coord_format="yolo",
+            label_fields=["labels"],
+            min_visibility=0.3)
+        )
+    },
+    {
+        "source": "C:\\Users\\name\\Desktop\\demo\\PO",
+        "destination": "C:\\Users\\name\\Desktop\\demo\\PO2",
+        "multiplier": 1,
+        "mosaic_allocate": 0,
+        "transform": A.Compose([
+            MixUp(p=1.0)
+        ],
+        bbox_params=A.BboxParams(
+            coord_format="yolo",
+            label_fields=["labels"],
+            min_visibility=0.3)
+        )
+    },
+]
+```
+
+
 
 ### Expected input structure (for video frame extraction)
 

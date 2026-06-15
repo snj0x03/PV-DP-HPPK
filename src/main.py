@@ -3,9 +3,10 @@ import argparse
 import warnings
 import cv2
 import time
+import conf.cls_config as cls_flow 
+import conf.det_config as det_flow
 from pipeline.extraction import frame_extraction_pipeline 
-from pipeline.classification import classification_pipeline
-from pipeline.detection import detection_pipeline 
+from flow.orchestrate import classification_orchestrate, detection_orchestrate
 
 def main():
     # Optimization
@@ -16,11 +17,10 @@ def main():
     parser.add_argument("-o", "--option", type=str)
     args   = parser.parse_args()
 
-    # Load Config
-    with open("./conf/sys_config.yml", "r") as f:
+    # Load Frame Extraction Config
+    with open("./conf/ext_config.yml", "r") as f:
         CFG = yaml.safe_load(f)
 
-    
     # Mode
     MODE = CFG["mode"]
 
@@ -30,20 +30,11 @@ def main():
     FRAME_RATE = CFG["frame_rate"]
     CSV_PATH = CFG["csv_path"]
 
-    # Augmentation Config
-    IMAGE_DIR = CFG["image_dir"]
-    IMAGE_SAVE_DIR = CFG["image_save_dir"]
-    TASK = CFG["task"]
 
-    COPY_MULT = CFG["copy_mult"]
-    AUG_MULT = CFG["aug_mult"]
-    MIXUP_MULT = CFG["mixup_mult"]
-    MOSAIC_MULT = CFG["mosaic_mult"]
-    
     start = time.time()
 
     # run frame extraction on video data
-    if args.option == "extract":
+    if args.option == "ext":
         frame_extraction_pipeline(file_dir=VIDEO_DIR,
                                   save_dir=FRAME_SAVE_DIR, 
                                   mode = MODE,
@@ -51,22 +42,14 @@ def main():
                                   csv_path=CSV_PATH)
 
     # run augmentation on yolo data
-    if args.option == "augment" and TASK == "Detection":
-        detection_pipeline(file_dir=IMAGE_DIR, 
-                           save_dir=IMAGE_SAVE_DIR, 
-                           mode = MODE,
-                           aug_mult=AUG_MULT,
-                           copy_mult=COPY_MULT, 
-                           mixup_mult=MIXUP_MULT,
-                           mosaic_mult=MOSAIC_MULT)
+    if args.option == "cls":
+        classification_orchestrate(AUG_LIST=cls_flow.AUG_LIST, 
+                                   MODE=cls_flow.MODE)
 
     # run augmentation on classification data
-    if args.option == "augment" and TASK == "Classification":
-        classification_pipeline(file_dir=IMAGE_DIR, 
-                                save_dir=IMAGE_SAVE_DIR,
-                                mode = MODE,
-                                copy_mult=COPY_MULT,
-                                aug_mult=AUG_MULT)
+    if args.option == "det":
+        detection_orchestrate(AUG_LIST=det_flow.AUG_LIST, 
+                              MODE=det_flow.MODE)
 
     end = time.time()
     print("Processing time:", end - start)

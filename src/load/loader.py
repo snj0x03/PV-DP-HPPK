@@ -4,6 +4,7 @@ import uuid
 import numpy as np
 
 
+# Detection
 def save_image(image: np.ndarray | None, save_dir: str, sub_dir: str, file_name: str) -> None:
     if image is None:
         return
@@ -33,21 +34,22 @@ def save_file_random(image: np.ndarray, labels: list, bboxes: list, save_dir: st
         save_label(labels, bboxes, save_dir, "labels", text_name)
 
 
+def save_result(result: tuple | None, save_dir: str):
+    if result:
+        image, labels, bboxes = result
+        save_file_random(image, labels, bboxes, save_dir) 
+
+
+# Classification 
 def save_image_random(image: np.ndarray | None, save_dir: str, sub_dir: str) -> None:
     name = uuid.uuid1()
     file_name = f"{name}.jpg"
     save_image(image, save_dir, sub_dir, file_name)
 
 
-def save_image_random_part(image: np.ndarray, save_dir: str, sub_dir: str, part_name: str) -> None:
+# Frame Extraction 
+def save_image_random_part(image: np.ndarray, save_dir: str, sub_dir: str, part_name: str, index: int) -> None:
     name = uuid.uuid1()
-    file_name = f"{part_name}-{name}.jpg"
+    file_name = f"{part_name}-{index:04d}-{name}.jpg"
     save_image(image, save_dir, sub_dir, file_name)
-
-
-def save_result(result: tuple | None, save_dir: str):
-    if result:
-        image, labels, bboxes = result
-        save_file_random(image, labels, bboxes, save_dir) 
-
 

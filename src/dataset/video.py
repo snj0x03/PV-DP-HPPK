@@ -4,6 +4,7 @@ from utils.helper import load_part_names
 def video_dataset(file_dir: str, csv_path: str) -> list[dict]:
     part_names = load_part_names(csv_path)
     dataset = []
+    count = 0
     for dir_name in os.listdir(file_dir):
         part = dir_name
         new_dir_name = os.path.join(file_dir, dir_name)
@@ -11,13 +12,15 @@ def video_dataset(file_dir: str, csv_path: str) -> list[dict]:
             for file_name in os.listdir(new_dir_name):
                 if file_name.endswith((".mp4")):
                     try:
-                        target =  {
-                            "video_path": os.path.join(new_dir_name, file_name), 
-                            "label": part_names[part],
-                            "part": part
-                        }
+                        target =  [
+                            os.path.join(new_dir_name, file_name), 
+                            part_names[part],
+                            part,
+                            count,
+                        ]
                         dataset.append(target)
                     except:
                         pass
+                    count += 1
     return dataset 
 

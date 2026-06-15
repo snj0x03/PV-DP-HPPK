@@ -35,6 +35,20 @@ def extract_target(file_dir: str, file_name: str) -> dict | None:
         }
     except:
         pass
+
+def extract_mixup_metadata(file_dir: str, mixup_file_name: list[str]):
+    metadata = []
+    for file_name in mixup_file_name:
+        target = extract_target(file_dir, file_name)
+        if target:
+            temp = {
+                "image": target["image"],
+                "bboxes": target["bboxes"],
+                "bbox_labels": {"labels": target["labels"]}
+            }
+            
+            metadata.append(temp)
+    return metadata
         
 def extract_mosaic_metadata(file_dir: str, mosaic_file_name: list[str]):
     metadata = []

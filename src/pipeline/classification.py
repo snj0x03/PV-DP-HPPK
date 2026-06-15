@@ -1,59 +1,57 @@
 import tqdm
-from dataset.image import image_dataset
-from transform.image.default import classify_transform, empty_transform
-from transform.image.augment import classification_transform
-from utils.helper import create_save_dir
-from multiprocessing import Pool, cpu_count
+import albumentations as A
 from functools import partial
+from multiprocessing import Pool, cpu_count
+
+from dataset.image import image_dataset
 from extract.extractor import extract_image
+from transform.augment import classification_transform
 from load.loader import save_image_random
+from utils.helper import create_save_dir
 
-def process_augment(args: dict, file_dir: str, save_dir: str) -> None:
 
-    file_name = args[0]
-    label = args[1]
-   
-    target = extract_image(file_dir, label, file_name) # Extract
-    image = classification_transform(target, classify_transform) # Transform 
-    save_image_random(image, save_dir, label) # Load
-    return
-
-def process_copy(args: dict, file_dir: str, save_dir: str) -> None:
+# ETL Process
+def process_augment(args: dict, 
+                    file_dir: str, 
+                    save_dir: str,
+                    transform: A.Compose) -> None:
 
     file_name = args[0]
     label = args[1]
    
     target = extract_image(file_dir, label, file_name) # Extract
-    image = classification_transform(target, empty_transform) # Transform 
+    image = classification_transform(target, transform) # Transform 
     save_image_random(image, save_dir, label) # Load
+
     return
 
+# Pipeline
 def classification_pipeline(file_dir: str,
                             save_dir: str,
                             mode: str,
-                            aug_mult: int,
-                            copy_mult: int) -> None:
+                            transform: A.Compose,
+                            multiplier: int) -> None:
 
     create_save_dir(file_dir, save_dir, mode)
-    print("Save Directory Created")
+    print(f"[INFO] Mode:        {mode}")
+    print(f"[INFO] Source:      {file_dir}")
+    print(f"[INFO] Destination: {save_dir}")
 
     # Dataset
     dataset = image_dataset(file_dir)
-    print("Image Dataset Created")
+    print("Image Dataset Created...")
 
     # Augmentation
-    print("Augmentation Initiated")
-    for i in range(aug_mult):
-        f_aug = partial(process_augment, file_dir = file_dir, save_dir = save_dir)
+    print("Augmentation Initiated...")
+    for i in range(multiplier):
+
+        func = partial(process_augment, 
+                       file_dir=file_dir, 
+                       save_dir=save_dir,
+                       transform=transform)
+
         with Pool(processes=cpu_count()) as pool:
-            for _ in tqdm.tqdm(pool.imap_unordered(f_aug, dataset), total=len(dataset), desc=f"Iter {i+1}"):
+            for _ in tqdm.tqdm(pool.imap_unordered(func, dataset), total=len(dataset), desc=f"Iter {i+1}"):
                 pass
     
-    # Copy
-    print("Copy Initiated")
-    for i in range(copy_mult):
-        f_aug = partial(process_augment, file_dir = file_dir, save_dir = save_dir)
-        with Pool(processes=cpu_count()) as pool:
-            for _ in tqdm.tqdm(pool.imap_unordered(f_aug, dataset), total=len(dataset), desc=f"Iter {i+1}"):
-                pass
 

@@ -1,20 +1,46 @@
 from utils.helper import create_save_dir
 from dataset.video import video_dataset
-from transform.video.extract import extract_frame
 from load.loader import save_image_random_part
 from functools import partial
 from multiprocessing import Pool, cpu_count
 import tqdm
+import cv2
+
+def etl_frame(video_path: str, 
+              save_dir: str, 
+              frame_rate: float, 
+              part: str, 
+              label: str,
+              index: int) -> None:
+
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    interval = max(int(fps * frame_rate), 1)
+
+    count = 0
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if count % interval == 0:
+            try:
+                save_image_random_part(frame, save_dir, part, label, index)
+            except:
+                pass
+        count += 1
+    
+    cap.release()
 
 def process_target(args: dict, frame_rate: float, save_dir: str) -> None:
 
-    video_path, label, part = args.values()
+    video_path = args[0] 
+    label = args[1] 
+    part = args[2] 
+    index = args[3]
 
-    frame_list = extract_frame(video_path, frame_rate) # Transform
+    etl_frame(video_path, save_dir, frame_rate, part, label, index) # ETL
     
-    for frame in frame_list:
-        save_image_random_part(frame, save_dir, part, label) # Load
-
     return 
 
 def frame_extraction_pipeline(file_dir: str, 
