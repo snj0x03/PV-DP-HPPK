@@ -226,7 +226,7 @@ cd src
 ### Stage 1 — Extract frames from videos
 
 ```bash
-python main.py --option extract
+python main.py --option ext
 ```
 
 This scans `video_dir` for subfolders, finds `.mp4` files inside each, extracts one frame every `frame_rate` seconds, and saves them to `frame_save_dir/<part_folder>/`.  
@@ -241,15 +241,13 @@ Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label
 For a **Detection** task (bounding boxes preserved):
 
 ```bash
-python main.py --option augment
-# Requires: task: "Detection" in sys_config.yml
+python main.py --option det
 ```
 
 For a **Classification** task (no bounding boxes):
 
 ```bash
-python main.py --option augment
-# Requires: task: "Classification" in sys_config.yml
+python main.py --option cls 
 ```
 
 
@@ -266,7 +264,7 @@ python main.py --option augment
 ### Detection Augmentation
 
 1. Reads all images and their YOLO label files from `yolo_dir`.
-2. Randomly pairs each image with another image (for MixUp).
+2. Pair each image with another image using  (for MixUp).
 3. For each image:
    - Optionally copies the original unchanged (`copy_mult`).
    - Generates `aug_mult` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
@@ -293,6 +291,6 @@ Same as Detection but without bounding box handling:
 | `opencv-python` | Video reading and frame extraction |
 | `numpy` | Array operations for MixUp augmentation |
 | `pandas` | Reading the HP parts name CSV file |
-| `pyyaml` | Parsing `sys_config.yml` |
+| `pyyaml` | Parsing `ext_config.yml` |
 | `albumentationsx` | Image augmentation pipeline (flip, rotate, blur, noise, etc.) |
 | `tqdm` | Progress bar for pipeline processing |
