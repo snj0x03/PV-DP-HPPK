@@ -96,7 +96,9 @@ AUG_LIST = [
 
 ```
 > [!WARNING]  
-> The steps in AUG_LIST are not topologically sorted. Each step will be executed in the order given in the configuration. 
+> The steps in AUG_LIST are not topologically sorted. 
+> Each step will be executed in the order given in the configuration. 
+
 
 All settings for object detection are in `src/conf/det_config.py`:
 
@@ -118,7 +120,8 @@ AUG_LIST = [
 ```
 
 > [!WARNING]  
-> The steps in AUG_LIST are not topologically sorted. Each step will be executed in the order given in the configuration. 
+> The steps in AUG_LIST are not topologically sorted.
+> Each step will be executed in the order given in the configuration. 
 
 Example object detection multi-step augmentation:
 
