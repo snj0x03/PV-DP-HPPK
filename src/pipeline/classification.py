@@ -34,9 +34,10 @@ def classification_pipeline(file_dir: str,
                             multiplier: int) -> None:
 
     create_save_dir(file_dir, save_dir, mode)
-    print(f"[INFO] Mode:        {mode}")
-    print(f"[INFO] Source:      {file_dir}")
-    print(f"[INFO] Destination: {save_dir}")
+    print(f"[\033[32mINFO\033[0m] Mode:            {mode}")
+    print(f"[\033[32mINFO\033[0m] Source:          {file_dir}")
+    print(f"[\033[32mINFO\033[0m] Destination:     {save_dir}")
+    print(f"[\033[32mINFO\033[0m] Augmentation:    {' | '.join(t.__class__.__name__ for t in transform.transforms)}")
 
     # Dataset
     dataset = image_dataset(file_dir)
@@ -54,5 +55,6 @@ def classification_pipeline(file_dir: str,
         with Pool(processes=cpu_count()) as pool:
             for _ in tqdm.tqdm(pool.imap_unordered(func, dataset), total=len(dataset), desc=f"Iter {i+1}"):
                 pass
+    print()
     
 

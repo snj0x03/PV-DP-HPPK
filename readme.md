@@ -62,7 +62,7 @@ Open `src/conf/` and fill in the paths and options for your environment before r
 
 ## Configuration
 
-All settings are in `src/conf/sys_config.yml`:
+All settings for frame extraction are in `src/conf/ext_config.yml`:
 
 ```yaml
 # --- Mode ---
@@ -78,7 +78,7 @@ frame_rate:     0     # Seconds between extracted frames
                       # (e.g. 0.25 = 4 fps, 0.8 = ~1.25 fps)
 ```
 
-All settings for classification in `src/conf/cls_config.py`:
+All settings for classification are in `src/conf/cls_config.py`:
 
 ```python
 
@@ -95,8 +95,10 @@ AUG_LIST = [
 ]
 
 ```
+> [!WARNING]  
+> The steps in AUG_LIST are not topologically sorted. Each step will be executed in the order given in the configuration. 
 
-All settings for classification in `src/conf/det_config.py`:
+All settings for object detection are in `src/conf/det_config.py`:
 
 ```python
 
@@ -114,6 +116,9 @@ AUG_LIST = [
 ]
 
 ```
+
+> [!WARNING]  
+> The steps in AUG_LIST are not topologically sorted. Each step will be executed in the order given in the configuration. 
 
 Example object detection multi-step augmentation:
 
@@ -223,7 +228,7 @@ All commands are run from inside the `src/` directory:
 cd src
 ```
 
-### Stage 1 — Extract frames from videos
+### Frame Extraction
 
 ```bash
 python main.py --option ext
@@ -232,11 +237,7 @@ python main.py --option ext
 This scans `video_dir` for subfolders, finds `.mp4` files inside each, extracts one frame every `frame_rate` seconds, and saves them to `frame_save_dir/<part_folder>/`.  
 Filenames are generated automatically using UUID to avoid collisions.
 
-### Stage 2 — Annotate extracted frames
-
-Use an external annotation tool such as **Roboflow** or **AnyLabeling** to label the extracted frames in YOLO format before running augmentation.
-
-### Stage 3 — Augment the annotated dataset
+### Image Augmentation 
 
 For a **Detection** task (bounding boxes preserved):
 
@@ -265,11 +266,7 @@ python main.py --option cls
 
 1. Reads all images and their YOLO label files from `yolo_dir`.
 2. Pair each image with another image using  (for MixUp).
-3. For each image:
-   - Optionally copies the original unchanged (`copy_mult`).
-   - Generates `aug_mult` augmented variants using: horizontal flip, brightness/contrast, rotation (±60°), Gaussian blur, Gaussian noise, hue/saturation shift.
-   - Optionally applies **MixUp**: blends two images together with a random alpha (0.6–0.7) and merges their bounding box lists.
-   - Optionally appleis **Mosaic**: combines multiple images toegther in grids
+3. Albumentations compose pipeline is applied on every image as specified in the configuration.
 4. Saves output images and updated `.txt` label files with UUID filenames.
 5. Bounding boxes are validated — any result where all boxes are lost (e.g. cropped out) is discarded.
 6. Runs in **parallel** using Python `multiprocessing`.
@@ -278,10 +275,13 @@ python main.py --option cls
 
 Same as Detection but without bounding box handling:
 1. Reads images from subdirectory-per-class folder structure.
-2. Optionally copies the original.
-3. Generates `aug_mult` augmented variants using: horizontal flip, brightness/contrast, rotation (±30°), Gaussian blur, Gaussian noise.
-4. Saves output images with UUID filenames into matching class subdirectories.
-5. Runs in **parallel** using Python `multiprocessing`.
+2. Albumentations compose pipeline is applied on every image as specified in the configuration.
+3. Saves output images with UUID filenames into matching class subdirectories.
+4. Runs in **parallel** using Python `multiprocessing`.
+
+### Flow
+
+Allows the user to construct multi-step augmentation.
 
 
 ## Dependencies

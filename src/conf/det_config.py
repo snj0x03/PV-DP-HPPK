@@ -7,10 +7,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 MODE = "normal"
 
-Input = "C:\\Users\\sawna\\Desktop\\AUG_TRAIN\\Input"
-F1 = "C:\\Users\\sawna\\Desktop\\AUG_TRAIN\\F1"
-F2 = "C:\\Users\\sawna\\Desktop\\AUG_TRAIN\\F2"
-Output = "C:\\Users\\sawna\\Desktop\\AUG_TRAIN\\Output"
+Input = "C:\\Users\\sawna\\Desktop\\AUG_TEST\\Input"
+F1 = "C:\\Users\\sawna\\Desktop\\AUG_TEST\\F1"
+F2 = "C:\\Users\\sawna\\Desktop\\AUG_TEST\\F2"
+Output = "C:\\Users\\sawna\\Desktop\\AUG_TEST\\Output"
 
 AUG_LIST = [
     {

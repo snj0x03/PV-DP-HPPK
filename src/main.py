@@ -52,7 +52,7 @@ def main():
                               MODE=det_flow.MODE)
 
     end = time.time()
-    print("Processing time:", end - start)
+    print(f"Processing time: {end - start}s")
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=UserWarning)

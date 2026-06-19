@@ -49,14 +49,19 @@ def frame_extraction_pipeline(file_dir: str,
                               frame_rate: float, 
                               csv_path: str) -> None:
 
+    print(f"[\033[32mINFO\033[0m] Mode:            {mode}")
+    print(f"[\033[32mINFO\033[0m] Source:          {file_dir}")
+    print(f"[\033[32mINFO\033[0m] Destination:     {save_dir}")
+    print(f"[\033[32mINFO\033[0m] Frame Rate:      {frame_rate}")
+
     create_save_dir(file_dir, save_dir, mode)
-    print("Save Directory Created")
+    print("Save Directory Created...")
    
     # Dataset 
     dataset = video_dataset(file_dir, csv_path)
-    print("Video Dataset Created")
+    print("Video Dataset Created...")
 
-    print("Extraction Process Initiated")
+    print("Extraction Process Initiated...")
     f = partial(process_target, 
                 frame_rate = frame_rate,
                 save_dir = save_dir)
@@ -64,6 +69,7 @@ def frame_extraction_pipeline(file_dir: str,
     with Pool(processes=cpu_count()) as pool:
         for _ in tqdm.tqdm(pool.imap_unordered(f, dataset), total=len(dataset), desc="Progress"):
             pass
+    print()
 
 
 
